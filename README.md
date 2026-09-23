@@ -10,4 +10,7 @@
 
 ## 与试做版的关系
 
-试做版（MVP）已跑通并归档，仓库存档于 `XingHo-VibeCoding/AI-sound-card`，本地存于 `D:\AI-sound-card`，仅作参考，不再演进。
+试做版（MVP）已跑通并归档，仅作参考，不再演进：
+
+- **参考产物**：已迁入 [`mvp实验产品/`](mvp实验产品/)（文档 + 旧规则 + `docs/` + 源码，约 2.5 MB）
+- **完整版**：GitHub `XingHo-VibeCoding/AI-sound-card` / 本地 `D:\AI-sound-card`
