@@ -546,9 +546,13 @@ flowchart TD
 | 项 | 状态 | 证据 |
 |---|---|---|
 | **Flutter SDK** | ✅ 已装 | `D:\development\flutter`，版本 **3.47.4 stable**（Dart 3.13.3） |
+| **`flutter` 已在 PATH** | ✅ 已配 | 直接敲 `flutter` 即可，**不必写全路径** |
+| **`adb` 已在 PATH** | ✅ 已配 | `D:\development\android-sdk\platform-tools\adb.exe` |
 | **Android SDK** | ✅ 已装 | `ANDROID_HOME = D:\development\android-sdk` |
 | **JDK** | ✅ 已装 | `JAVA_HOME = D:\development\JDK` |
-| **完整工具链体检** | ⚠️ **待你在自己终端跑** | 我这边 `flutter doctor` 被沙箱拦下（它要读注册表），**结论未验证** |
+| **pub 国内镜像** | ✅ 已配 | `PUB_HOSTED_URL=https://pub.flutter-io.cn` · `FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn` → 装依赖不会卡 |
+| **Android 模拟器（AVD）** | ❌ **一个都没有** | `~/.android/avd` 不存在 → **要跑只能插真机**，或先自己建一个 AVD |
+| **完整工具链体检** | ⚠️ **待你在自己终端跑** | 我这边 `flutter doctor` / `flutter devices` **均被沙箱拦下**（flutter 会调 `reg.exe` 读注册表，而 `reg.EXE` 在本机安全策略黑名单里），**结论未验证** |
 
 **你要自己动手做的事**（我不替你跑）：
 1. 打开 CMD 或 PowerShell，运行 **`flutter doctor`**；
