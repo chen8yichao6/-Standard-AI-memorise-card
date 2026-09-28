@@ -551,18 +551,70 @@ flowchart TD
 | **Android SDK** | ✅ 已装 | `ANDROID_HOME = D:\development\android-sdk` |
 | **JDK** | ✅ 已装 | `JAVA_HOME = D:\development\JDK` |
 | **pub 国内镜像** | ✅ 已配 | `PUB_HOSTED_URL=https://pub.flutter-io.cn` · `FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn` → 装依赖不会卡 |
-| **Android 模拟器（AVD）** | ❌ **一个都没有** | `~/.android/avd` 不存在 → **要跑只能插真机**，或先自己建一个 AVD |
-| **完整工具链体检** | ⚠️ **待你在自己终端跑** | 我这边 `flutter doctor` / `flutter devices` **均被沙箱拦下**（flutter 会调 `reg.exe` 读注册表，而 `reg.EXE` 在本机安全策略黑名单里），**结论未验证** |
+| **Android 模拟器（AVD）** | ❌ **不能直接用** | ⚠️ 不只是"没有 AVD"——**连 `emulator.exe` 这个模拟器程序本身都没装**（`D:\development\android-sdk\emulator\` 为空）。要建得先下 2 个组件：`emulator`（约 300 MB）+ 系统镜像（如 `system-images;android-35;google_apis;x86_64`，约 1.5 GB）。**前置条件已达标**：CPU `AMD Ryzen 9 8940HX`、BIOS 虚拟化已开、C 盘可用 255.7 GB；`sdkmanager.bat` 已在（`cmdline-tools/latest/bin/`） |
+| **安卓真机** | ❌ **当前不可用（USB 枚举失败）** | 2026-09-28 三次实测各不相同：**17:21** 可见 1 台（`device` 状态）· **19:50** 为空 · **20:07** 插上手机后 Windows USB 层报 **`未知 USB 设备(设备描述符请求失败)`，错误码 43，`VID_0000`** → 属**物理层（线 / 口）**故障，**与手机内设置无关**。排查步骤见下方 🔌 |
+| **Android 构建能否通过** | ✅ **能**（见下方 ⚠️ 路径坑） | 实测 `flutter build apk --debug` **成功**，27.6 s，产物 `app/build/app/outputs/flutter-apk/app-debug.apk`（143.5 MB，debug 包体积大属正常） |
+| **完整工具链体检** | ⚠️ **待你在自己终端跑** | 我这边 `flutter doctor` / `flutter devices` **均被沙箱拦下**（flutter 会调 `reg.exe` 读注册表，而 `reg.EXE` 在本机安全策略黑名单里），**结论未验证**。注意：`flutter build` 不调 `reg.exe`，所以我能跑通构建、却跑不了 `devices` |
 
 **你要自己动手做的事**（我不替你跑）：
 1. 打开 CMD 或 PowerShell，运行 **`flutter doctor`**；
 2. **该看到**：`Flutter`、`Android toolchain`、`Android Studio`（或 `cmdline-tools`）三行是 `[√]`；
 3. **常见坑**：Android licenses 未接受 → 按提示跑 `flutter doctor --android-licenses` 全部 `y`。
 
+> ⚠️ **已踩过的坑 · 构建路径含中文（2026-09-28 首次构建失败）**
+>
+> 现象：`flutter run` / `flutter build` 报 `An exception occurred applying plugin request [id: 'com.android.application']` → `Your project path contains non-ASCII characters`，3 分 14 秒后 `BUILD FAILED`。
+>
+> 根因：仓库路径 `D:\06-AI记忆卡` 含中文字符，**Android Gradle 插件在 Windows 上会拒绝加载**。与代码、Flutter 版本无关。
+>
+> 处理：已在 `app/android/gradle.properties` 加一行 `android.overridePathCheck=true`（**本项目无本地 C++/NDK 编译，跳过该检查是安全的**），实测构建通过。
+>
+> 复发判据：**这条报错再出现 = 那一行丢了**。根治办法是把仓库挪到纯英文路径（如 `D:\06-AI-MemoryCard`），代价是所有本地路径引用要跟着改。
+>
+> 这条对**整个 D 盘编号命名习惯**（`01-Java学习`、`02-学校作业`……）都成立：**凡是里层要跑 Gradle / NDK 的项目，路径别用中文。**
+
+> 🔌 **真机连不上怎么查（2026-09-28 实测流程，按顺序做）**
+>
+> **第 0 步 · 先看设备在不在：**
+> ```powershell
+> adb devices
+> ```
+> **正确结果是两行**，第二行形如 `320646022744    device`。只输出 `List of devices attached` 一行 = **没连上**。
+>
+> | `adb` 显示 | 含义 | 怎么办 |
+> |---|---|---|
+> | **空列表** | 没连上 | 按下面 ①–④ 逐条查 |
+> | `unauthorized` | 连上了，但**没授权** | 看手机屏幕：弹窗「允许 USB 调试吗」→ 勾「始终允许」→ 允许 |
+> | `offline` | 连接异常 | 拔插一次，再 `adb kill-server` → `adb devices` |
+>
+> ① **换线** —— 市面上大量 USB 线**只能充电、不能传数据**，这是最常见的原因，优先换一根。
+> ② **换口** —— 直插笔记本/机箱的 USB 口，**不要走扩展坞 / 集线器**。
+> ③ **手机侧设置** —— 开发者选项里打开 **USB 调试**；插上后下拉通知栏，把 USB 用途选成「**传输文件 / MTP**」。
+> ④ **看手机屏幕** —— 插上后必须点掉「允许 USB 调试吗」那个弹窗；**不点就等于 `unauthorized`**。
+>
+> 🔍 **往下一层看**（`adb` 为空时，分清是"没插"还是"插了但失败"）：
+> ```powershell
+> Get-PnpDevice -PresentOnly | Where-Object { $_.Status -ne 'OK' } | Select-Object Status, FriendlyName
+> ```
+>
+> | 看到什么 | 含义 | 怎么办 |
+> |---|---|---|
+> | **没有输出** | Windows 也没认到任何东西 | 就是线/口的问题 → 按 ① ② 查 |
+> | **`未知 USB 设备(设备描述符请求失败)`** | ⚠️ **USB 枚举失败**（Windows 错误码 **43**）—— 连厂商 ID 都读不到（`VID_0000`） | **与手机设置无关，纯物理层**：换线 → 换口（可试 USB 2.0 口）→ 查手机充电口 |
+> | **有名字的设备**（`SM-xxxx` / `HUAWEI xxx` 等） | Windows 认得它 | 那就只剩授权问题 → 回到 ③ ④ |
+>
+> ⚠️ **一个关键区分（2026-09-28 实测踩到）**：
+> - **USB 调试没开** → Windows **能看到手机**（当 MTP / 充电设备），只是 `adb` 看不到 → 去**手机设置**里修。
+> - **报「设备描述符请求失败」（错误码 43）** → Windows **连它是什么都读不出来**（`VID_0000`）→ 去**物理层**修，**翻手机设置没用**。
+>
+> ⚠️ **小米 / 红米额外两件事**：开发者选项里「**USB 调试**」和「**USB 调试（安全设置）**」**两个都要开** —— 后一个不给，安装 App 时会报 `INSTALL_FAILED_USER_RESTRICTED`；部分机型还要求插 SIM 卡 + 登录小米账号才允许通过 USB 安装应用。
+>
+> 以上都做完再敲 `flutter devices` → 应多出一行手机（形如 `SM-xxxx (mobile)`）→ 然后 `flutter run` 选它。
+
 ### 10.2 本期怎么跑起来
 
 ```bash
-# ① 建工程（Day 6 起，今天不执行）
+# ① 建工程 —— ✅ 2026-09-28 已执行，app/ 已存在（这一步不用再做）
 cd D:\06-AI记忆卡
 flutter create --org com.aimemorycard --project-name ai_memory_card app
 
@@ -577,6 +629,11 @@ flutter run
 ```
 
 **该看到什么**：手机上出现 App 图标 → 打开直接进**首页**（A-01：不经过任何登录页）。
+
+> **`flutter run` 弹出设备选择菜单时怎么选**（`flutter devices` 若只列出 `Windows / Chrome / Edge`，说明**没识别到手机**）：
+> - `Windows` → ❌ **选了直接报错**：Windows 桌面目标需要 Visual Studio 的 C++ 工具链，**本机未装**；
+> - `Chrome` / `Edge` → ⚠️ 都是 **Web 目标**，能验 UI 和主题，但 **`record` 输出格式不是 m4a、`path_provider` 在 Web 上没有文件系统** → **录音线根本走不通**；
+> - ✅ **要选以手机型号/序列号命名的那个**（形如 `SM-xxxx (mobile)` 或一串数字）。选不到就先敲 `adb devices` 确认手机是 `device` 状态（不是 `unauthorized` / `offline`）。
 
 > **首期只做 Android**（`PRD.md` §7 N22）。Windows 上**编不了 iOS**，这不是配置问题，是平台限制——**不要把时间花在试 iOS 上**。
 
