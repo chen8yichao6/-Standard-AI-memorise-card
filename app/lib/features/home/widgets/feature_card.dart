@@ -1,80 +1,60 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/mech_panel.dart';
 
-/// 可复用功能入口卡片：图标 + 标题 + 副标题 + 右箭头。
+/// 主动作入口卡片（本期只有「录音」）。
 ///
-/// 这是 Day 8「余力加练」的产物 —— 后续每个功能区都能复用同一张卡片，
-/// 只换 title / subtitle / icon / color 即可，不用重写。
+/// 深蓝赛博：金属渐变面板 + 青色左条 + 铆钉点 + 右上 REC 标。
 class FeatureCard extends StatelessWidget {
   const FeatureCard({
     super.key,
     required this.title,
     required this.subtitle,
-    required this.icon,
-    required this.color,
     this.onTap,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
-  final Color color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return MechPanel(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.cardWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppTheme.ink,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+      accentBar: true,
+      bolts: true,
+      raised: true,
+      padding: const EdgeInsets.fromLTRB(16, 18, 14, 18),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Text(title, style: AppTheme.title),
+                    const SizedBox(width: AppTheme.gapXs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppTheme.primaryDim),
+                      ),
+                      child: Text(
+                        'REC',
+                        style: AppTheme.micro.copyWith(color: AppTheme.primary),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: AppTheme.ink.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.gapXxs),
+                Text(subtitle, style: AppTheme.caption),
+              ],
             ),
-            Icon(
-              Icons.chevron_right,
-              color: AppTheme.ink.withValues(alpha: 0.35),
-            ),
-          ],
-        ),
+          ),
+          const Icon(Icons.chevron_right, color: AppTheme.primary, size: 22),
+        ],
       ),
     );
   }

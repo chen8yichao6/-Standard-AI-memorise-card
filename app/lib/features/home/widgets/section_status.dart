@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/mech_panel.dart';
 import '../../../data/mock/mock_seed.dart';
 
 /// 四种页面状态。
-///
-/// 今日清单的「今天要掌握」问的就是这个：四种状态里，哪一种最容易被忽略。
-/// 答案见收尾说明 —— 这里先把四种都做出来，且每一种都能被真实触发、验收。
 enum HomeStatus { loading, success, empty, error }
 
 /// 一个数据区的四态渲染器。
 ///
 /// 用法：传入状态 + 数据 + 单项构建函数；加载/空/错误由本组件统一渲染，
 /// 成功态才调用 itemBuilder 画列表。
+///
+/// 2026-10-03：主光色由亮绿改为青色（`accent` → `primary`），
+/// 空态补一行等宽说明，避免只有图标 + 一句话显得太空。
 class SectionStatus extends StatelessWidget {
   const SectionStatus({
     super.key,
@@ -34,70 +35,81 @@ class SectionStatus extends StatelessWidget {
         return const _StatusBox(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 3),
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: AppTheme.primary,
+                ),
               ),
-              SizedBox(height: 12),
-              Text('加载中…'),
+              SizedBox(height: AppTheme.gapSm),
+              Text('加载中…', style: AppTheme.caption),
+              SizedBox(height: AppTheme.gapXxs),
+              Text('READING LOCAL INDEX', style: AppTheme.micro),
             ],
           ),
         );
 
       case HomeStatus.empty:
-        return const _StatusBox(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.inbox_outlined, size: 40, color: AppTheme.ochre),
-              SizedBox(height: 12),
-              Text('还没有录音，去录一段吧'),
-            ],
-          ),
-        );
+        return const _EmptyBox();
 
       case HomeStatus.error:
         return _StatusBox(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Icon(Icons.error_outline, size: 40, color: AppTheme.rouge),
-              const SizedBox(height: 12),
-              const Text('加载失败，请重试'),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: onRetry,
-                child: const Text('重试'),
-              ),
+              const Icon(Icons.error_outline, size: 34, color: AppTheme.danger),
+              const SizedBox(height: AppTheme.gapSm),
+              const Text('录音拉取失败', style: AppTheme.caption),
+              const SizedBox(height: AppTheme.gapXxs),
+              const Text('ERR-SECTION-LOAD', style: AppTheme.micro),
+              const SizedBox(height: AppTheme.gapSm),
+              OutlinedButton(onPressed: onRetry, child: const Text('重试')),
             ],
           ),
         );
 
       case HomeStatus.success:
-        if (items.isEmpty) {
-          return const _StatusBox(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(Icons.inbox_outlined, size: 40, color: AppTheme.ochre),
-                SizedBox(height: 12),
-                Text('还没有录音，去录一段吧'),
-              ],
-            ),
-          );
-        }
+        if (items.isEmpty) return const _EmptyBox();
         return Column(
           children: <Widget>[
-            for (final RecordingItem item in items) itemBuilder(item),
+            for (int i = 0; i < items.length; i++) ...<Widget>[
+              if (i > 0) Container(height: 1, color: AppTheme.divider()),
+              itemBuilder(items[i]),
+            ],
           ],
         );
     }
   }
 }
 
-/// 状态占位框：加载/空/错误三态共用的浅色卡片底。
+/// 空态 —— 机械面板 + 图标 + 两行说明。
+class _EmptyBox extends StatelessWidget {
+  const _EmptyBox();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _StatusBox(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.inbox_outlined, size: 34, color: AppTheme.textTertiary),
+          SizedBox(height: AppTheme.gapSm),
+          Text('还没有录音，去录一段吧', style: AppTheme.caption),
+          SizedBox(height: AppTheme.gapXxs),
+          Text('NO RECORD FOUND', style: AppTheme.micro),
+        ],
+      ),
+    );
+  }
+}
+
+/// 状态占位框：加载/空/错误三态共用的机械面板（左对齐）。
 class _StatusBox extends StatelessWidget {
   const _StatusBox({required this.child});
 
@@ -105,15 +117,9 @@ class _StatusBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardWhite,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.ink.withValues(alpha: 0.06)),
-      ),
-      child: child,
+    return MechPanel(
+      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
+      child: Align(alignment: Alignment.centerLeft, child: child),
     );
   }
 }

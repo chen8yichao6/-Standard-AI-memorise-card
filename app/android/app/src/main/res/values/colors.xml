@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 原生启动窗口底色 = 主题「深蓝赛博」bg（与 AppTheme.bg 一致）。
+         冷启动先显示深蓝底，Flutter 启动页再接管，中间无白闪、无蓝 logo。
+         2026-10-03：由 #0A0F1A（近黑）改为 #0E1C30（深蓝）。 -->
+    <color name="launch_bg">#0E1C30</color>
+</resources>
