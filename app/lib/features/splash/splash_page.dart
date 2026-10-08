@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/mech_background.dart';
-import '../home/home_page.dart';
+import '../../root_gate.dart';
 
 /// 启动页（Splash）—— 深蓝赛博 · 自检过场。
 ///
@@ -75,14 +75,15 @@ class _SplashPageState extends State<SplashPage>
     if (status == AnimationStatus.completed) _goHome();
   }
 
-  /// 切首页。用 pushReplacement —— 启动页不留在返回栈里。
+  /// 切根路由门。用 pushReplacement —— 启动页不留在返回栈里。
+  /// 后续进登录页还是首页，由 [RootGate] 按登录态决定。
   void _goHome() {
     if (_navigated || !mounted) return;
     _navigated = true;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 220),
-        pageBuilder: (_, __, ___) => const HomePage(),
+        pageBuilder: (_, __, ___) => const RootGate(),
         transitionsBuilder: (_, Animation<double> anim, __, Widget child) =>
             FadeTransition(opacity: anim, child: child),
       ),

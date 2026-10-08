@@ -5,20 +5,28 @@ import '../../core/widgets/hud.dart';
 import '../../core/widgets/mech_avatar.dart';
 import '../../core/widgets/mech_background.dart';
 import '../../core/widgets/mech_panel.dart';
-import '../../data/mock/mock_seed.dart';
+import '../auth/auth_controller.dart';
+import '../auth/auth_state.dart';
+import '../auth/models/user.dart';
 import 'settings_page.dart';
 
 /// 个人页面（P1）—— 从首页右上角头像进入。
 ///
 /// 本期范围（PRD §3.1）：
-/// - 顶部头像占位 + 昵称占位 + 账号小字（数据来自 [mockUser]，写死）；
+/// - 顶部头像占位 + 昵称 + 邮箱（数据来自登录态 [AuthController]，真数据）；
 /// - 三个入口：账号 / 设置 / 关于；
-/// - 退出登录（红字，二次确认）。
+/// - 退出登录（红字，二次确认 → 真登出，清凭证回登录页）。
 ///
-/// 「账号」与「设置」的**子页**分别排在步 3 / 步 2 建，本页先占位提示；
-/// 「关于」直接弹窗展示，不建子页。
+/// 「账号」子页排在步 3 建，本页先占位提示；
+/// 「设置」子页已建（主题更换）；「关于」直接弹窗展示，不建子页。
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  /// 当前登录用户（未登录时为 null）。
+  User? get _user {
+    final AuthState state = AuthController.instance.value;
+    return state is AuthAuthenticated ? state.user : null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +57,7 @@ class ProfilePage extends StatelessWidget {
                             _EntryTile(
                               icon: Icons.person_outline,
                               title: '账号',
-                              subtitle: mockUser.account,
+                              subtitle: _user?.email ?? '—',
                               onTap: () => _showTodo(context, '账号区下一板块接入'),
                             ),
                             const _EntryDivider(),
@@ -106,6 +114,7 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildProfileCard() {
+    final User? user = _user;
     return MechPanel(
       raised: true,
       bolts: true,
@@ -119,12 +128,12 @@ class ProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  mockUser.nickname,
+                  user?.nickname ?? '未登录',
                   style: AppTheme.title.copyWith(fontSize: 20),
                 ),
                 const SizedBox(height: AppTheme.gapXxs),
                 Text(
-                  mockUser.account,
+                  user?.email ?? '账号区待接入',
                   style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
                 ),
               ],
@@ -197,7 +206,7 @@ class ProfilePage extends StatelessWidget {
             style: TextStyle(color: AppTheme.textPrimary, fontSize: 17),
           ),
           content: Text(
-            '当前为本地演示，退出后仅切换为「未登录」占位态。',
+            '退出后将清除本地登录凭证，回到登录页。',
             style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           actions: <Widget>[
@@ -206,13 +215,13 @@ class ProfilePage extends StatelessWidget {
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    const SnackBar(content: Text('已退出（本地演示）')),
-                  );
+                await AuthController.instance.logout();
+                if (context.mounted) {
+                  // 回到根（此时 RootGate 已切换为登录页）。
+                  Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+                }
               },
               child: Text('退出', style: TextStyle(color: AppTheme.danger)),
             ),
