@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/theme_spec.dart';
 
 /// 「深蓝赛博」背景 —— 全 App 统一的底。
 ///
@@ -18,12 +19,14 @@ class MechBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    // 传 spec 给 painter：主题切换后 spec.id 变化，shouldRepaint 返回 true 才会重画，
+    // 否则「底色变了、光晕还停在旧主题色」画面发脏（2026-10-08 主题层改造发现）。
+    return ColoredBox(
       color: AppTheme.bg,
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _BgPainter(),
-          child: SizedBox.expand(),
+          painter: _BgPainter(spec: AppTheme.spec),
+          child: const SizedBox.expand(),
         ),
       ),
     );
@@ -31,7 +34,9 @@ class MechBackground extends StatelessWidget {
 }
 
 class _BgPainter extends CustomPainter {
-  const _BgPainter();
+  const _BgPainter({required this.spec});
+
+  final ThemeSpec spec;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -42,13 +47,13 @@ class _BgPainter extends CustomPainter {
     _paintCornerMarks(canvas, size);
   }
 
-  /// 两枚径向光晕：左上青、右下蓝。
+  /// 两枚径向光晕：左上主色、右下结构色。
   void _paintGlow(Canvas canvas, Size size, Rect full) {
     final Paint topLeft = Paint()
       ..shader = RadialGradient(
         colors: <Color>[
-          AppTheme.primary.withValues(alpha: 0.13),
-          AppTheme.primary.withValues(alpha: 0.0),
+          spec.primary.withValues(alpha: 0.13),
+          spec.primary.withValues(alpha: 0.0),
         ],
       ).createShader(
         Rect.fromCircle(
@@ -61,8 +66,8 @@ class _BgPainter extends CustomPainter {
     final Paint bottomRight = Paint()
       ..shader = RadialGradient(
         colors: <Color>[
-          AppTheme.accent.withValues(alpha: 0.14),
-          AppTheme.accent.withValues(alpha: 0.0),
+          spec.accent.withValues(alpha: 0.14),
+          spec.accent.withValues(alpha: 0.0),
         ],
       ).createShader(
         Rect.fromCircle(
@@ -76,7 +81,7 @@ class _BgPainter extends CustomPainter {
   /// 横向扫描线。每 5px 一条，透明度控制在「看得见但不抢戏」。
   void _paintScanLines(Canvas canvas, Size size) {
     final Paint paint = Paint()
-      ..color = AppTheme.primary.withValues(alpha: 0.055)
+      ..color = spec.primary.withValues(alpha: 0.055)
       ..strokeWidth = 1;
     const double step = 5.0;
     for (double y = 0; y < size.height; y += step) {
@@ -91,10 +96,10 @@ class _BgPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: <Color>[
-          AppTheme.bgDeep.withValues(alpha: 0.55),
-          AppTheme.bgDeep.withValues(alpha: 0.0),
-          AppTheme.bgDeep.withValues(alpha: 0.0),
-          AppTheme.bgDeep.withValues(alpha: 0.65),
+          spec.bgDeep.withValues(alpha: 0.55),
+          spec.bgDeep.withValues(alpha: 0.0),
+          spec.bgDeep.withValues(alpha: 0.0),
+          spec.bgDeep.withValues(alpha: 0.65),
         ],
         stops: const <double>[0.0, 0.16, 0.72, 1.0],
       ).createShader(full);
@@ -104,7 +109,7 @@ class _BgPainter extends CustomPainter {
   /// 四角机械角标（每角两条短线，形成不闭合的切角框）。
   void _paintCornerMarks(Canvas canvas, Size size) {
     final Paint paint = Paint()
-      ..color = AppTheme.primary.withValues(alpha: 0.34)
+      ..color = spec.primary.withValues(alpha: 0.34)
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.square;
     const double len = 20;
@@ -127,7 +132,8 @@ class _BgPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _BgPainter oldDelegate) =>
+      oldDelegate.spec.id != spec.id;
 }
 
 /// 扫描光带 —— 一条青色亮线自上而下循环扫过，制造「设备正在运行」的动感。

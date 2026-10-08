@@ -114,7 +114,7 @@ class _TopBar extends StatelessWidget {
           child: Row(
             children: <Widget>[
               IconButton(
-                icon: const Icon(Icons.chevron_left, color: AppTheme.textPrimary),
+                icon: Icon(Icons.chevron_left, color: AppTheme.textPrimary),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: AppTheme.gapXxs),
@@ -209,7 +209,7 @@ class _RecordButtonState extends State<_RecordButton> {
                   border: Border.all(color: AppTheme.primary, width: 1.6),
                   boxShadow: AppTheme.glow(opacity: _pressed ? 0.10 : 0.22),
                 ),
-                child: const Icon(Icons.mic_none, color: AppTheme.primary, size: 34),
+                child: Icon(Icons.mic_none, color: AppTheme.primary, size: 34),
               ),
             ),
           ),

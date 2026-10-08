@@ -32,7 +32,9 @@ class SectionStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (status) {
       case HomeStatus.loading:
-        return const _StatusBox(
+        // 注意：不能 const——CircularProgressIndicator 与字阶里带主题色，
+        // 主题切换后要能取到新值（2026-10-08 主题层改造）。
+        return _StatusBox(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,11 +64,11 @@ class SectionStatus extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const Icon(Icons.error_outline, size: 34, color: AppTheme.danger),
+              Icon(Icons.error_outline, size: 34, color: AppTheme.danger),
               const SizedBox(height: AppTheme.gapSm),
-              const Text('录音拉取失败', style: AppTheme.caption),
+              Text('录音拉取失败', style: AppTheme.caption),
               const SizedBox(height: AppTheme.gapXxs),
-              const Text('ERR-SECTION-LOAD', style: AppTheme.micro),
+              Text('ERR-SECTION-LOAD', style: AppTheme.micro),
               const SizedBox(height: AppTheme.gapSm),
               OutlinedButton(onPressed: onRetry, child: const Text('重试')),
             ],
@@ -93,7 +95,7 @@ class _EmptyBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _StatusBox(
+    return _StatusBox(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

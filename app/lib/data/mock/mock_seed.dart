@@ -48,3 +48,23 @@ const List<RecordingItem> mockRecordings = <RecordingItem>[
   RecordingItem(id: 'r2', title: '英语课笔记', duration: '45:08', date: '09-27'),
   RecordingItem(id: 'r3', title: '太极训练心得', duration: '08:15', date: '09-26'),
 ];
+
+/// 当前用户（P1 个人页面顶部展示的占位信息）。
+///
+/// 本期账号区写死：默认就是「未登录」占位态（对应 PRD EX-11），
+/// 不虚构真实昵称/手机号。将来接 T1 认证接口时，只替换这里的来源。
+class UserProfile {
+  const UserProfile({
+    required this.nickname,
+    required this.account,
+  });
+
+  final String nickname;
+  final String account;
+}
+
+/// 未登录占位态。
+const UserProfile mockUser = UserProfile(
+  nickname: '未登录',
+  account: '账号区待接入',
+);

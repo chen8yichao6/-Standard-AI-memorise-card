@@ -63,7 +63,7 @@ class HudBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: padding ?? const EdgeInsets.symmetric(vertical: 6),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: AppTheme.borderSoft, width: 0.8),
           bottom: BorderSide(color: AppTheme.borderSoft, width: 0.8),

@@ -145,7 +145,7 @@ class _PlayerPlaceholder extends StatelessWidget {
                   color: AppTheme.surfaceRaised,
                   border: Border.all(color: AppTheme.primary, width: 1.5),
                 ),
-                child: const Icon(Icons.play_arrow, color: AppTheme.primary, size: 26),
+                child: Icon(Icons.play_arrow, color: AppTheme.primary, size: 26),
               ),
               const SizedBox(width: AppTheme.gapMd),
               Expanded(
@@ -197,7 +197,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: <Widget>[
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: AppTheme.textPrimary),
+            icon: Icon(Icons.chevron_left, color: AppTheme.textPrimary),
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: AppTheme.gapXxs),

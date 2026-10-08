@@ -53,7 +53,7 @@ class FeatureCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppTheme.primary, size: 22),
+          Icon(Icons.chevron_right, color: AppTheme.primary, size: 22),
         ],
       ),
     );

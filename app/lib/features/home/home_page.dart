@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/hud.dart';
+import '../../core/widgets/mech_avatar.dart';
 import '../../core/widgets/mech_background.dart';
 import '../../core/widgets/mech_panel.dart';
 import '../../data/mock/mock_seed.dart';
+import '../profile/profile_page.dart';
 import '../record/record_page.dart';
 import '../record/recording_detail_page.dart';
 import 'widgets/feature_card.dart';
@@ -69,7 +71,7 @@ class _HomePageState extends State<HomePage> {
           SafeArea(
             child: Column(
               children: <Widget>[
-                const _TopBar(),
+                _TopBar(onAvatarTap: _openProfile),
                 Expanded(
                   child: ListView(
                     padding:
@@ -117,6 +119,12 @@ class _HomePageState extends State<HomePage> {
   void _openRecord() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const RecordPage()),
+    );
+  }
+
+  void _openProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ProfilePage()),
     );
   }
 
@@ -185,7 +193,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(width: AppTheme.gapXs),
             Text(item.duration, style: AppTheme.numeral),
             const SizedBox(width: AppTheme.gapXxs),
-            const Icon(Icons.chevron_right, color: AppTheme.textTertiary, size: 16),
+            Icon(Icons.chevron_right, color: AppTheme.textTertiary, size: 16),
           ],
         ),
       ),
@@ -193,9 +201,11 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-/// 自绘顶栏：左标题 + 右呼吸指示点 + 状态字，下面压一条 HUD 状态行。
+/// 自绘顶栏：左标题 + 右头像入口，下面压一条 HUD 状态行。
 class _TopBar extends StatelessWidget {
-  const _TopBar();
+  const _TopBar({required this.onAvatarTap});
+
+  final VoidCallback onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -214,22 +224,19 @@ class _TopBar extends StatelessWidget {
                 style: AppTheme.micro,
               ),
               const Spacer(),
-              const PulseDot(size: 6),
-              const SizedBox(width: AppTheme.gapXs),
-              Text(
-                'ONLINE',
-                style: AppTheme.micro.copyWith(color: AppTheme.primary),
-              ),
+              // 右上角：个人中心入口（头像）。ONLINE 状态已下移到下方 HUD 行。
+              MechAvatar(size: 30, onTap: onAvatarTap),
             ],
           ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: const HudBar(
+          child: HudBar(
             items: <HudItem>[
               HudItem(label: 'VER', value: '0.1.0'),
               HudItem(label: 'STORE', value: 'LOCAL'),
               HudItem(label: 'DEV', value: 'MOBILE'),
+              HudItem(label: 'LINK', value: 'ONLINE', valueColor: AppTheme.primary),
             ],
           ),
         ),
@@ -305,14 +312,14 @@ class _SearchBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppTheme.gapSm),
-          const Icon(Icons.search, color: AppTheme.textTertiary, size: 18),
+          Icon(Icons.search, color: AppTheme.textTertiary, size: 18),
           const SizedBox(width: AppTheme.gapXs),
           Expanded(
             child: TextField(
               onChanged: onChanged,
               style: AppTheme.body,
               cursorColor: AppTheme.primary,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: '搜索录音',
                 hintStyle: TextStyle(color: AppTheme.textTertiary, fontSize: 14),
                 border: InputBorder.none,
