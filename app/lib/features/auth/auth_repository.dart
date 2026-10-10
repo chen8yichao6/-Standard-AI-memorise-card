@@ -81,7 +81,9 @@ class AuthRepository {
         '/users/me/avatar',
         data: form,
       );
-      return User.fromJson(r.data!['user'] as Map<String, dynamic>);
+      // 注意：`PUT /users/me/avatar` 返回的是**扁平 User**（与 `GET /users/me` 同构，
+      // 契约 §1.7），不是登录/注册那种 `{user, tokens}` 包层——不要套 `['user']`。
+      return User.fromJson(r.data!);
     });
   }
 
