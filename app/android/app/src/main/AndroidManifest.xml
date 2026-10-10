@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 联网：后端 API 鉴权与数据请求。
+         debug/profile 变体的 manifest 自带 INTERNET（热重载需要），
+         但 release 不会自动注入——必须在这里显式声明，否则真机 release 包
+         所有网络请求被系统直接拒绝，表现为「网络错误」。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- 真录音：麦克风权限（record 插件需要） -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
