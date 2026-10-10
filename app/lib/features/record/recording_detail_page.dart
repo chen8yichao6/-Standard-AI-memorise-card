@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/hud.dart';
@@ -6,14 +9,90 @@ import '../../core/widgets/mech_background.dart';
 import '../../core/widgets/mech_panel.dart';
 import '../../data/mock/mock_seed.dart';
 
-/// 历史录音详情页（P3a）—— 占位。
+/// 历史录音详情页（P3a）—— 真回放。
 ///
-/// 展示元信息 + 波形预览 + 「回放待接入」的播放器占位，不接真音频（`just_audio` 下一板块）。
-/// 2026-10-03 加密度：HUD 状态行、波形条、量程尺、播放器重新排版。
-class RecordingDetailPage extends StatelessWidget {
+/// 2026-10-10 接入 `just_audio`：按 [RecordingItem.filePath] 加载本地音频，
+/// 播放/暂停切换、进度条与波形着色走真实播放进度。
+/// 种子数据没有真文件（filePath 为 null）时降级为「无音频文件」提示，不崩溃。
+class RecordingDetailPage extends StatefulWidget {
   const RecordingDetailPage({super.key, required this.item});
 
   final RecordingItem item;
+
+  @override
+  State<RecordingDetailPage> createState() => _RecordingDetailPageState();
+}
+
+class _RecordingDetailPageState extends State<RecordingDetailPage> {
+  final AudioPlayer _player = AudioPlayer();
+
+  bool _ready = false;
+  bool _playing = false;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  StreamSubscription<Duration>? _posSub;
+  StreamSubscription<PlayerState>? _stateSub;
+
+  @override
+  void initState() {
+    super.initState();
+    final String? path = widget.item.filePath;
+    if (path != null) _init(path);
+  }
+
+  Future<void> _init(String path) async {
+    try {
+      await _player.setFilePath(path);
+      _duration = _player.duration ?? Duration.zero;
+      if (mounted) setState(() => _ready = true);
+      _posSub = _player.positionStream.listen((Duration p) {
+        if (mounted) setState(() => _position = p);
+      });
+      _stateSub = _player.playerStateStream.listen((PlayerState s) {
+        final bool playing = s.playing;
+        if (mounted && playing != _playing) {
+          setState(() => _playing = playing);
+        }
+      });
+    } catch (_) {
+      // 文件缺失 / 解码失败：降级为「无音频文件」。
+      if (mounted) setState(() => _ready = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _posSub?.cancel();
+    _stateSub?.cancel();
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePlay() async {
+    if (!_ready) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('该记录无音频文件，去录一段吧')),
+      );
+      return;
+    }
+    if (_playing) {
+      await _player.pause();
+    } else {
+      await _player.play();
+    }
+  }
+
+  double get _progress {
+    if (_duration.inMilliseconds <= 0) return 0.0;
+    return (_position.inMilliseconds / _duration.inMilliseconds)
+        .clamp(0.0, 1.0);
+  }
+
+  String _fmt(Duration d) {
+    final int m = d.inMinutes;
+    final int s = d.inSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,19 +110,22 @@ class RecordingDetailPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     children: <Widget>[
                       const SizedBox(height: AppTheme.gapXs),
-                      Text(item.title, style: AppTheme.display),
+                      Text(widget.item.title, style: AppTheme.display),
                       const SizedBox(height: AppTheme.gapSm),
                       Row(
                         children: <Widget>[
-                          _MetaChip(label: 'DATE', value: item.date),
+                          _MetaChip(label: 'DATE', value: widget.item.date),
                           const SizedBox(width: AppTheme.gapXs),
                           _MetaChip(
                             label: 'LEN',
-                            value: item.duration,
+                            value: widget.item.duration,
                             valueColor: AppTheme.primary,
                           ),
                           const SizedBox(width: AppTheme.gapXs),
-                          _MetaChip(label: 'ID', value: item.id.toUpperCase()),
+                          _MetaChip(
+                            label: 'ID',
+                            value: widget.item.id.toUpperCase(),
+                          ),
                         ],
                       ),
                       const SizedBox(height: AppTheme.gapXl),
@@ -53,7 +135,11 @@ class RecordingDetailPage extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
                         child: Column(
                           children: <Widget>[
-                            const WaveBars(count: 40, height: 64, progress: 0.34),
+                            WaveBars(
+                              count: 40,
+                              height: 64,
+                              progress: _ready ? _progress : 0.0,
+                            ),
                             const SizedBox(height: AppTheme.gapXs),
                             CalibrationRuler(
                               divisions: 40,
@@ -64,13 +150,24 @@ class RecordingDetailPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: AppTheme.gapLg),
-                      _PlayerPlaceholder(duration: item.duration),
+                      _PlayerPanel(
+                        ready: _ready,
+                        playing: _playing,
+                        position: _position,
+                        duration: _duration,
+                        progress: _progress,
+                        onToggle: _togglePlay,
+                      ),
                       const SizedBox(height: AppTheme.gapLg),
                       const TechDivider(label: 'TRACK INFO'),
                       const SizedBox(height: AppTheme.gapSm),
                       Text(
-                        '转写、纪要、纠错入口不在本期范围（第一阶段只跑通录音与回放）。',
-                        style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
+                        widget.item.filePath == null
+                            ? '该记录为示例数据，无音频文件；录一段新录音即可回放。'
+                            : '转写、纪要、纠错入口不在本期范围（第一阶段只跑通录音与回放）。',
+                        style: AppTheme.micro.copyWith(
+                          color: AppTheme.textTertiary,
+                        ),
                       ),
                       const SizedBox(height: AppTheme.gapLg),
                     ],
@@ -122,14 +219,38 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-/// 播放器占位：切角面板 + 播放键 + 进度条 + 「待接入」。
-class _PlayerPlaceholder extends StatelessWidget {
-  const _PlayerPlaceholder({required this.duration});
+/// 真播放器：切角面板 + 播放/暂停键 + 当前时间/总时长 + 真实进度条。
+class _PlayerPanel extends StatelessWidget {
+  const _PlayerPanel({
+    required this.ready,
+    required this.playing,
+    required this.position,
+    required this.duration,
+    required this.progress,
+    required this.onToggle,
+  });
 
-  final String duration;
+  final bool ready;
+  final bool playing;
+  final Duration position;
+  final Duration duration;
+  final double progress;
+  final VoidCallback onToggle;
+
+  String _fmt(Duration d) {
+    final int m = d.inMinutes;
+    final int s = d.inSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final Color keyColor = ready ? AppTheme.primary : AppTheme.textTertiary;
+    final String status = !ready
+        ? '无音频文件'
+        : playing
+            ? '播放中'
+            : '已就绪';
     return MechPanel(
       cornerTag: true,
       padding: const EdgeInsets.all(18),
@@ -137,45 +258,54 @@ class _PlayerPlaceholder extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.surfaceRaised,
-                  border: Border.all(color: AppTheme.primary, width: 1.5),
+              GestureDetector(
+                onTap: onToggle,
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.surfaceRaised,
+                    border: Border.all(color: keyColor, width: 1.5),
+                  ),
+                  child: Icon(
+                    playing ? Icons.pause : Icons.play_arrow,
+                    color: keyColor,
+                    size: 26,
+                  ),
                 ),
-                child: Icon(Icons.play_arrow, color: AppTheme.primary, size: 26),
               ),
               const SizedBox(width: AppTheme.gapMd),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(duration, style: AppTheme.numeral),
+                    Text(_fmt(position), style: AppTheme.numeral),
                     const SizedBox(height: AppTheme.gapXxs),
                     Text(
-                      '音频回放待接入',
-                      style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
+                      status,
+                      style: AppTheme.micro.copyWith(
+                        color: playing ? AppTheme.primary : AppTheme.textTertiary,
+                      ),
                     ),
                   ],
                 ),
               ),
               Text(
-                '00:00',
+                _fmt(duration),
                 style: AppTheme.mono.copyWith(color: AppTheme.textTertiary),
               ),
             ],
           ),
           const SizedBox(height: AppTheme.gapMd),
-          // 假进度条：暗槽 + 青色已播放段
+          // 真实进度条：暗槽 + 青色已播放段
           Container(
             height: 3,
             color: AppTheme.bgDeep,
             child: Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
-                widthFactor: 0.06,
+                widthFactor: progress,
                 child: Container(color: AppTheme.primary),
               ),
             ),

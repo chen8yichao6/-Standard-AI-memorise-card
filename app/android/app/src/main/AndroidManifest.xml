@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 真录音：麦克风权限（record 插件需要） -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="AI 记忆卡"
         android:name="${applicationName}"

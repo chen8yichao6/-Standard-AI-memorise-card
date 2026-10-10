@@ -6,6 +6,7 @@ import '../../core/widgets/mech_avatar.dart';
 import '../../core/widgets/mech_background.dart';
 import '../../core/widgets/mech_panel.dart';
 import '../../data/mock/mock_seed.dart';
+import '../../data/recordings/recording_store.dart';
 import '../profile/profile_page.dart';
 import '../record/record_page.dart';
 import '../record/recording_detail_page.dart';
@@ -13,8 +14,10 @@ import 'widgets/feature_card.dart';
 import 'widgets/section_status.dart';
 
 /// 首页状态，通过 --dart-define=HOME_STATE=xxx 切换，仅用于本地验收四态。
-const String _homeStateEnv =
-    String.fromEnvironment('HOME_STATE', defaultValue: 'success');
+const String _homeStateEnv = String.fromEnvironment(
+  'HOME_STATE',
+  defaultValue: 'success',
+);
 
 HomeStatus _resolveStatus() {
   switch (_homeStateEnv) {
@@ -49,13 +52,36 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _query = '';
+  RecordingType? _type; // null = 全部
+
+  @override
+  void initState() {
+    super.initState();
+    RecordingStore.instance.addListener(_onStoreChanged);
+    // 启动加载录音索引（种子 → 真文件），加载完成后重建列表。
+    RecordingStore.instance.load();
+  }
+
+  @override
+  void dispose() {
+    RecordingStore.instance.removeListener(_onStoreChanged);
+    super.dispose();
+  }
+
+  void _onStoreChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 是否处于筛选态（文本搜索或分类筛选任一激活）。
+  bool get _isFiltering => _type != null || _query.trim().isNotEmpty;
 
   List<RecordingItem> get _filtered {
     final String q = _query.trim();
-    if (q.isEmpty) return mockRecordings;
-    return mockRecordings
-        .where((RecordingItem r) => r.title.contains(q))
-        .toList();
+    return RecordingStore.instance.items.where((RecordingItem r) {
+      final bool matchType = _type == null || r.type == _type;
+      final bool matchQuery = q.isEmpty || r.title.contains(q);
+      return matchType && matchQuery;
+    }).toList();
   }
 
   @override
@@ -74,8 +100,10 @@ class _HomePageState extends State<HomePage> {
                 _TopBar(onAvatarTap: _openProfile),
                 Expanded(
                   child: ListView(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     children: <Widget>[
                       _SearchBar(
                         onChanged: (String v) => setState(() => _query = v),
@@ -95,11 +123,18 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: AppTheme.gapXl),
                       const HudLabel('最近录音'),
                       const SizedBox(height: AppTheme.gapXs),
+                      _TypeFilterBar(
+                        selected: _type,
+                        onChanged: (RecordingType? t) =>
+                            setState(() => _type = t),
+                      ),
+                      const SizedBox(height: AppTheme.gapMd),
                       SectionStatus(
                         status: status,
                         items: _filtered,
                         itemBuilder: _buildRecordingTile,
                         onRetry: () => setState(() {}),
+                        emptyText: _isFiltering ? '没有匹配的录音' : '还没有录音，去录一段吧',
                       ),
                       const SizedBox(height: AppTheme.gapXl),
                       const _FooterStatus(),
@@ -117,22 +152,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openRecord() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RecordPage()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const RecordPage()));
   }
 
   void _openProfile() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ProfilePage()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const ProfilePage()));
   }
 
   void _openDetail(RecordingItem item) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RecordingDetailPage(item: item),
-      ),
+      MaterialPageRoute<void>(builder: (_) => RecordingDetailPage(item: item)),
     );
   }
 
@@ -182,7 +213,11 @@ class _HomePageState extends State<HomePage> {
                     children: <Widget>[
                       Text(item.date, style: AppTheme.mono),
                       const SizedBox(width: AppTheme.gapXs),
-                      Container(width: 3, height: 3, color: AppTheme.textTertiary),
+                      Container(
+                        width: 3,
+                        height: 3,
+                        color: AppTheme.textTertiary,
+                      ),
                       const SizedBox(width: AppTheme.gapXs),
                       Text('REC', style: AppTheme.micro),
                     ],
@@ -219,10 +254,7 @@ class _TopBar extends StatelessWidget {
               const SizedBox(width: AppTheme.gapXs),
               Container(width: 1, height: 14, color: AppTheme.border),
               const SizedBox(width: AppTheme.gapXs),
-              Text(
-                'MEMORY UNIT',
-                style: AppTheme.micro,
-              ),
+              Text('MEMORY UNIT', style: AppTheme.micro),
               const Spacer(),
               // 右上角：个人中心入口（头像）。ONLINE 状态已下移到下方 HUD 行。
               MechAvatar(size: 30, onTap: onAvatarTap),
@@ -236,7 +268,11 @@ class _TopBar extends StatelessWidget {
               HudItem(label: 'VER', value: '0.1.0'),
               HudItem(label: 'STORE', value: 'LOCAL'),
               HudItem(label: 'DEV', value: 'MOBILE'),
-              HudItem(label: 'LINK', value: 'ONLINE', valueColor: AppTheme.primary),
+              HudItem(
+                label: 'LINK',
+                value: 'ONLINE',
+                valueColor: AppTheme.primary,
+              ),
             ],
           ),
         ),
@@ -321,7 +357,10 @@ class _SearchBar extends StatelessWidget {
               cursorColor: AppTheme.primary,
               decoration: InputDecoration(
                 hintText: '搜索录音',
-                hintStyle: TextStyle(color: AppTheme.textTertiary, fontSize: 14),
+                hintStyle: TextStyle(
+                  color: AppTheme.textTertiary,
+                  fontSize: 14,
+                ),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.symmetric(vertical: 13),
@@ -329,10 +368,7 @@ class _SearchBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppTheme.gapXs),
-          Text(
-            'SCAN',
-            style: AppTheme.micro,
-          ),
+          Text('SCAN', style: AppTheme.micro),
           const SizedBox(width: AppTheme.gapSm),
         ],
       ),
@@ -388,10 +424,7 @@ class _RadarPlaceholder extends StatelessWidget {
             Positioned(
               left: 14,
               top: 10,
-              child: Text(
-                'SLOT-01',
-                style: AppTheme.micro,
-              ),
+              child: Text('SLOT-01', style: AppTheme.micro),
             ),
             Positioned(
               right: 14,
@@ -443,7 +476,11 @@ class _ReticlePainter extends CustomPainter {
     const double pad = 10;
     const double tl = 8;
     canvas.drawLine(Offset(pad, pad), Offset(pad + tl, pad), tick);
-    canvas.drawLine(Offset(size.width - pad, pad), Offset(size.width - pad - tl, pad), tick);
+    canvas.drawLine(
+      Offset(size.width - pad, pad),
+      Offset(size.width - pad - tl, pad),
+      tick,
+    );
   }
 
   @override
@@ -477,6 +514,74 @@ class _FooterStatus extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// 录音类型筛选条：全部 + 各类型，横向滚动（窄屏可滑动）。
+class _TypeFilterBar extends StatelessWidget {
+  const _TypeFilterBar({required this.selected, required this.onChanged});
+
+  final RecordingType? selected; // null = 全部
+  final ValueChanged<RecordingType?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 34,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: <Widget>[
+          _TypeChip(
+            label: '全部',
+            selected: selected == null,
+            onTap: () => onChanged(null),
+          ),
+          for (final RecordingType t in RecordingType.values) ...<Widget>[
+            const SizedBox(width: AppTheme.gapXs),
+            _TypeChip(
+              label: t.label,
+              selected: selected == t,
+              onTap: () => onChanged(t),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 单个类型筛选 chip —— 选中 = 青色边框 + 淡青底 + 青色字。
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color borderColor = selected ? AppTheme.primary : AppTheme.border;
+    final Color textColor = selected ? AppTheme.primary : AppTheme.textTertiary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.10)
+              : Colors.transparent,
+          border: Border.all(color: borderColor),
+        ),
+        child: Text(
+          label,
+          style: AppTheme.micro.copyWith(color: textColor, letterSpacing: 1),
+        ),
+      ),
     );
   }
 }

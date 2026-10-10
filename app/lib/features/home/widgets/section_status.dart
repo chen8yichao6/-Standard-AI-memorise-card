@@ -21,12 +21,14 @@ class SectionStatus extends StatelessWidget {
     required this.items,
     required this.itemBuilder,
     this.onRetry,
+    this.emptyText = '还没有录音，去录一段吧',
   });
 
   final HomeStatus status;
   final List<RecordingItem> items;
   final Widget Function(RecordingItem item) itemBuilder;
   final VoidCallback? onRetry;
+  final String emptyText;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +58,7 @@ class SectionStatus extends StatelessWidget {
         );
 
       case HomeStatus.empty:
-        return const _EmptyBox();
+        return _EmptyBox(text: emptyText);
 
       case HomeStatus.error:
         return _StatusBox(
@@ -76,7 +78,7 @@ class SectionStatus extends StatelessWidget {
         );
 
       case HomeStatus.success:
-        if (items.isEmpty) return const _EmptyBox();
+        if (items.isEmpty) return _EmptyBox(text: emptyText);
         return Column(
           children: <Widget>[
             for (int i = 0; i < items.length; i++) ...<Widget>[
@@ -91,7 +93,9 @@ class SectionStatus extends StatelessWidget {
 
 /// 空态 —— 机械面板 + 图标 + 两行说明。
 class _EmptyBox extends StatelessWidget {
-  const _EmptyBox();
+  const _EmptyBox({required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +106,7 @@ class _EmptyBox extends StatelessWidget {
         children: <Widget>[
           Icon(Icons.inbox_outlined, size: 34, color: AppTheme.textTertiary),
           SizedBox(height: AppTheme.gapSm),
-          Text('还没有录音，去录一段吧', style: AppTheme.caption),
+          Text(text, style: AppTheme.caption),
           SizedBox(height: AppTheme.gapXxs),
           Text('NO RECORD FOUND', style: AppTheme.micro),
         ],
