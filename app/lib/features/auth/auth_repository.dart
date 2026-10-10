@@ -54,6 +54,24 @@ class AuthRepository {
     });
   }
 
+  /// 上传头像（`PUT /users/me/avatar`，契约 §1.7）。
+  ///
+  /// `multipart/form-data`，字段名 `file`；≤5 MiB；`jpg`/`png`/`webp`，
+  /// 服务端魔数终判（类型不符 415 / 超限 413）。响应同 §1.5（`{user: {...}}`）。
+  Future<User> uploadAvatar(String filePath) {
+    return guard(() async {
+      final FormData form = FormData.fromMap(<String, dynamic>{
+        'file': await MultipartFile.fromFile(filePath, filename: 'avatar'),
+      });
+      final Response<Map<String, dynamic>> r =
+          await _dio.put<Map<String, dynamic>>(
+        '/users/me/avatar',
+        data: form,
+      );
+      return User.fromJson(r.data!['user'] as Map<String, dynamic>);
+    });
+  }
+
   /// 冷启动：本地是否还保留 refresh token（用于决定进登录页还是首页）。
   Future<bool> hasStoredSession() async {
     return await _tokens.read() != null;

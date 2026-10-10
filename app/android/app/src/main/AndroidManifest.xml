@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- 真录音：麦克风权限（record 插件需要） -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- 选头像：读相册（Android 13+ 用 READ_MEDIA_IMAGES，旧版用 READ_EXTERNAL_STORAGE） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
     <application
         android:label="AI 记忆卡"
         android:name="${applicationName}"

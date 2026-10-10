@@ -38,6 +38,8 @@ dependencies:
   dio: ^5.11.1
   flutter_secure_storage: ^11.2.0
   uuid: ^4.6.0
+  # 头像：从相册选图（契约 §1.7 PUT /users/me/avatar）
+  image_picker: ^1.1.2
   record: ^5.2.1
   just_audio: ^0.9.46
   path_provider: ^2.1.5

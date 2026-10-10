@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../core/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/hud.dart';
 import '../../core/widgets/mech_avatar.dart';
@@ -13,115 +15,173 @@ import 'settings_page.dart';
 /// 个人页面（P1）—— 从首页右上角头像进入。
 ///
 /// 本期范围（PRD §3.1）：
-/// - 顶部头像占位 + 昵称 + 邮箱（数据来自登录态 [AuthController]，真数据）；
+/// - 顶部头像（**可点击更换**，走 `PUT /users/me/avatar`）+ 昵称 + 邮箱；
 /// - 三个入口：账号 / 设置 / 关于；
 /// - 退出登录（红字，二次确认 → 真登出，清凭证回登录页）。
 ///
 /// 「账号」子页排在步 3 建，本页先占位提示；
 /// 「设置」子页已建（主题更换）；「关于」直接弹窗展示，不建子页。
-class ProfilePage extends StatelessWidget {
+///
+/// 登录态变化（如上传头像后 user 刷新）通过监听 [AuthController] 自动重绘。
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  /// 当前登录用户（未登录时为 null）。
-  User? get _user {
-    final AuthState state = AuthController.instance.value;
-    return state is AuthAuthenticated ? state.user : null;
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  bool _uploading = false;
+
+  /// 选图 → 上传头像 → 刷新登录态。
+  ///
+  /// 契约 §1.7：`multipart/form-data` 字段 `file`，≤5 MiB，jpg/png/webp；
+  /// 服务端魔数终判，类型不符 415、超限 413——错误文案原样透传给用户。
+  Future<void> _pickAndUploadAvatar() async {
+    if (_uploading) return;
+
+    final ImagePicker picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploading = true);
+    try {
+      await AuthController.instance.uploadAvatar(picked.path);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('头像已更新')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('头像上传失败，请稍后重试')),
+          );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.bg,
-      body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: MechBackground()),
-          SafeArea(
-            child: Column(
-              children: <Widget>[
-                _TopBar(onBack: () => Navigator.of(context).pop()),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    children: <Widget>[
-                      _buildProfileCard(),
-                      const SizedBox(height: AppTheme.gapXl),
-                      const HudLabel('账户与设置', expand: true),
-                      const SizedBox(height: AppTheme.gapSm),
-                      MechPanel(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          children: <Widget>[
-                            _EntryTile(
-                              icon: Icons.person_outline,
-                              title: '账号',
-                              subtitle: _user?.email ?? '—',
-                              onTap: () => _showTodo(context, '账号区下一板块接入'),
-                            ),
-                            const _EntryDivider(),
-                            _EntryTile(
-                              icon: Icons.palette_outlined,
-                              title: '设置',
-                              subtitle: '主题更换',
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const SettingsPage(),
+    return ValueListenableBuilder<AuthState>(
+      valueListenable: AuthController.instance,
+      builder: (BuildContext context, AuthState state, Widget? child) {
+        final User? user = state is AuthAuthenticated ? state.user : null;
+        return Scaffold(
+          backgroundColor: AppTheme.bg,
+          body: Stack(
+            children: <Widget>[
+              const Positioned.fill(child: MechBackground()),
+              SafeArea(
+                child: Column(
+                  children: <Widget>[
+                    _TopBar(onBack: () => Navigator.of(context).pop()),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        children: <Widget>[
+                          _buildProfileCard(user),
+                          const SizedBox(height: AppTheme.gapXl),
+                          const HudLabel('账户与设置', expand: true),
+                          const SizedBox(height: AppTheme.gapSm),
+                          MechPanel(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Column(
+                              children: <Widget>[
+                                _EntryTile(
+                                  icon: Icons.person_outline,
+                                  title: '账号',
+                                  subtitle: user?.email ?? '—',
+                                  onTap: () =>
+                                      _showTodo(context, '账号区下一板块接入'),
                                 ),
-                              ),
+                                const _EntryDivider(),
+                                _EntryTile(
+                                  icon: Icons.palette_outlined,
+                                  title: '设置',
+                                  subtitle: '主题更换',
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const SettingsPage(),
+                                    ),
+                                  ),
+                                ),
+                                const _EntryDivider(),
+                                _EntryTile(
+                                  icon: Icons.info_outline,
+                                  title: '关于',
+                                  subtitle: 'v0.1.0',
+                                  onTap: () => _showAbout(context),
+                                ),
+                              ],
                             ),
-                            const _EntryDivider(),
-                            _EntryTile(
-                              icon: Icons.info_outline,
-                              title: '关于',
-                              subtitle: 'v0.1.0',
-                              onTap: () => _showAbout(context),
+                          ),
+                          const SizedBox(height: AppTheme.gapSm),
+                          MechPanel(
+                            onTap: () => _confirmLogout(context),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Icon(Icons.logout,
+                                    color: AppTheme.danger, size: 18),
+                                SizedBox(width: AppTheme.gapXs),
+                                Text(
+                                  '退出登录',
+                                  style: TextStyle(
+                                    color: AppTheme.danger,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppTheme.gapSm),
-                      MechPanel(
-                        onTap: () => _confirmLogout(context),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            Icon(Icons.logout, color: AppTheme.danger, size: 18),
-                            SizedBox(width: AppTheme.gapXs),
-                            Text(
-                              '退出登录',
-                              style: TextStyle(
-                                color: AppTheme.danger,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const Positioned.fill(child: ScanSweep()),
+            ],
           ),
-          const Positioned.fill(child: ScanSweep()),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildProfileCard() {
-    final User? user = _user;
+  Widget _buildProfileCard(User? user) {
     return MechPanel(
       raised: true,
       bolts: true,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Row(
         children: <Widget>[
-          const MechAvatar(size: 72),
+          // 点击头像 → 选图上传（契约 §1.7）。上传中禁用重复点击。
+          MechAvatar(
+            size: 72,
+            imageUrl: user?.avatarUrl,
+            onTap: _uploading ? null : _pickAndUploadAvatar,
+          ),
           const SizedBox(width: AppTheme.gapMd),
           Expanded(
             child: Column(
@@ -133,7 +193,12 @@ class ProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: AppTheme.gapXxs),
                 Text(
-                  user?.email ?? '账号区待接入',
+                  _uploading ? '正在上传头像…' : (user?.email ?? '账号区待接入'),
+                  style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
+                ),
+                const SizedBox(height: AppTheme.gapXxs),
+                Text(
+                  '点击头像可更换',
                   style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
                 ),
               ],

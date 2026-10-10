@@ -50,6 +50,12 @@ class AuthController extends ValueNotifier<AuthState> {
     value = AuthAuthenticated(user);
   }
 
+  /// 上传头像成功 → 用服务端返回的新 user 刷新登录态（头像立即生效）。
+  Future<void> uploadAvatar(String filePath) async {
+    final user = await _repo.uploadAvatar(filePath);
+    value = AuthAuthenticated(user);
+  }
+
   /// 登出 → 未登录态。
   Future<void> logout() async {
     await _repo.logout();

@@ -28,6 +28,7 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
 
   bool _ready = false;
   bool _playing = false;
+  bool _completed = false; // 播完一遍（再点即重播）
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   StreamSubscription<Duration>? _posSub;
@@ -50,8 +51,14 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
       });
       _stateSub = _player.playerStateStream.listen((PlayerState s) {
         final bool playing = s.playing;
-        if (mounted && playing != _playing) {
-          setState(() => _playing = playing);
+        // 播完一遍后 just_audio 停在末尾（completed），此时直接 play() 不会重播，
+        // 必须先 seek 回 0 —— 交给 _togglePlay 处理，这里只同步 UI 状态。
+        final bool completed = s.processingState == ProcessingState.completed;
+        if (mounted && (playing != _playing || completed != _completed)) {
+          setState(() {
+            _playing = playing;
+            _completed = completed;
+          });
         }
       });
     } catch (_) {
@@ -77,9 +84,15 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
     }
     if (_playing) {
       await _player.pause();
-    } else {
-      await _player.play();
+      return;
     }
+    // 关键：播完一遍后播放头停在末尾，just_audio 不会自动回到开头，
+    // 再调 play() 会「没反应」——先 seek 到 0 才是重播。
+    if (_completed || _player.processingState == ProcessingState.completed) {
+      await _player.seek(Duration.zero);
+      if (mounted) setState(() => _completed = false);
+    }
+    await _player.play();
   }
 
   double get _progress {
@@ -153,6 +166,7 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
                       _PlayerPanel(
                         ready: _ready,
                         playing: _playing,
+                        completed: _completed,
                         position: _position,
                         duration: _duration,
                         progress: _progress,
@@ -224,6 +238,7 @@ class _PlayerPanel extends StatelessWidget {
   const _PlayerPanel({
     required this.ready,
     required this.playing,
+    required this.completed,
     required this.position,
     required this.duration,
     required this.progress,
@@ -232,6 +247,7 @@ class _PlayerPanel extends StatelessWidget {
 
   final bool ready;
   final bool playing;
+  final bool completed;
   final Duration position;
   final Duration duration;
   final double progress;
@@ -250,7 +266,9 @@ class _PlayerPanel extends StatelessWidget {
         ? '无音频文件'
         : playing
             ? '播放中'
-            : '已就绪';
+            : completed
+                ? '已播完 · 点击重播'
+                : '已就绪';
     return MechPanel(
       cornerTag: true,
       padding: const EdgeInsets.all(18),
@@ -269,7 +287,9 @@ class _PlayerPanel extends StatelessWidget {
                     border: Border.all(color: keyColor, width: 1.5),
                   ),
                   child: Icon(
-                    playing ? Icons.pause : Icons.play_arrow,
+                    playing
+                        ? Icons.pause
+                        : (completed ? Icons.replay : Icons.play_arrow),
                     color: keyColor,
                     size: 26,
                   ),
