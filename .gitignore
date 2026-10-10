@@ -16,6 +16,9 @@ __pycache__/
 dist/
 build/
 *.log
+*.apk
+ci-artifact/
+ci-artifact.zip
 
 # ---- 编辑器与系统文件 ----
 .vscode/

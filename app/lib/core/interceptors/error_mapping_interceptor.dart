@@ -75,6 +75,13 @@ class ErrorMappingInterceptor extends Interceptor {
     if (status == null) {
       return '网络连接失败';
     }
+    // 头像上传的常见明确错误，给用户看得懂的文案（契约 §1.7）。
+    if (status == 413) {
+      return '图片太大，请选择 5MB 以内的图片';
+    }
+    if (status == 415) {
+      return '不支持的图片格式，请选 jpg / png / webp 图片';
+    }
     if (status >= 500) {
       return '服务暂时不可用，请稍后重试';
     }

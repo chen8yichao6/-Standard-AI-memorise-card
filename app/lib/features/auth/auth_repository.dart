@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../../core/dio_client.dart';
@@ -58,10 +60,20 @@ class AuthRepository {
   ///
   /// `multipart/form-data`，字段名 `file`；≤5 MiB；`jpg`/`png`/`webp`，
   /// 服务端魔数终判（类型不符 415 / 超限 413）。响应同 §1.5（`{user: {...}}`）。
+  ///
+  /// ⚠️ 服务端做「魔数嗅探」判类型，会结合 `filename` 扩展名 + `Content-Type`
+  /// 辅助判定。这里从文件路径取真实扩展名作为 `filename`，并读文件前几字节
+  /// 推断真实 `MediaType`，避免 image_picker 缓存路径无扩展名导致 415。
   Future<User> uploadAvatar(String filePath) {
     return guard(() async {
+      final String name = _avatarFilename(filePath);
+      final MediaType? mediaType = _sniffMediaType(filePath);
       final FormData form = FormData.fromMap(<String, dynamic>{
-        'file': await MultipartFile.fromFile(filePath, filename: 'avatar'),
+        'file': await MultipartFile.fromFile(
+          filePath,
+          filename: name,
+          contentType: mediaType,
+        ),
       });
       final Response<Map<String, dynamic>> r =
           await _dio.put<Map<String, dynamic>>(
@@ -72,10 +84,75 @@ class AuthRepository {
     });
   }
 
-  /// 冷启动：本地是否还保留 refresh token（用于决定进登录页还是首页）。
-  Future<bool> hasStoredSession() async {
-    return await _tokens.read() != null;
+  /// 从路径提取文件名；无扩展名时按魔数补一个（后端魔数嗅探依赖扩展名）。
+  String _avatarFilename(String filePath) {
+    final String base = filePath.split(RegExp(r'[/\\]')).last;
+    if (base.contains('.')) {
+      return base;
+    }
+    return '$base.${_sniffMediaType(filePath)?.subtype ?? 'jpg'}';
   }
+
+  /// 读文件前几字节嗅探图片类型（契约仅收 jpg/png/webp）。
+  MediaType? _sniffMediaType(String filePath) {
+    try {
+      final File f = File(filePath);
+      final List<int> head = f.readAsBytesSync().take(12).toList();
+      if (head.length >= 12 &&
+          head[0] == 0xFF &&
+          head[1] == 0xD8 &&
+          head[2] == 0xFF) {
+        return MediaType('image', 'jpeg');
+      }
+      if (head.length >= 8 &&
+          head[0] == 0x89 &&
+          head[1] == 0x50 &&
+          head[2] == 0x4E &&
+          head[3] == 0x47) {
+        return MediaType('image', 'png');
+      }
+      if (head.length >= 12 &&
+          head[0] == 0x52 &&
+          head[1] == 0x49 &&
+          head[2] == 0x46 &&
+          head[3] == 0x46 &&
+          head[8] == 0x57 &&
+          head[9] == 0x45 &&
+          head[10] == 0x42 &&
+          head[11] == 0x50) {
+        return MediaType('image', 'webp');
+      }
+    } catch (_) {
+      // 读不到就返回 null，交给 dio 按文件推断。
+    }
+    return null;
+  }
+
+  /// 冷启动：读取本地凭证（refresh token + user_id + 最后登录时间）。
+  /// 无 refresh token 返回 null；有则返回完整凭证集供免登录窗口判断。
+  Future<StoredTokens?> hasStoredSession() async {
+    return await _tokens.read();
+  }
+
+  /// 用本地 user_id 构造最小 User（离线免登录兜底，信息待联网补全）。
+  User localUser(String userId) {
+    return User(
+      id: userId,
+      email: '',
+      nickname: '',
+      avatarUrl: null,
+      role: 'user',
+      status: 'active',
+      avatarUpdatedAt: null,
+      createdAt: 0,
+    );
+  }
+
+  /// 静默恢复成功后刷新「最后登录时间」锚点。
+  Future<void> touchSession() => _tokens.touchLastLogin();
+
+  /// 凭证被拒时清除本地凭证。
+  Future<void> clearSession() => _tokens.clear();
 
   /// 拉取当前用户（`GET /users/me`）。
   ///
