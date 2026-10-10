@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../../core/dio_client.dart';
 import '../../core/guard.dart';

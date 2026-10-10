@@ -4,6 +4,7 @@ import '../../core/api_exception.dart';
 import '../../core/token_store.dart';
 import 'auth_repository.dart';
 import 'auth_state.dart';
+import 'models/user.dart';
 
 /// 认证状态控制器 —— 全局单例，持当前登录态，驱动根部路由分支。
 ///

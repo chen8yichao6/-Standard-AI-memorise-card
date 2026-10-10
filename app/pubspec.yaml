@@ -36,6 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.6
   dio: ^5.11.1
+  # 头像上传用 MediaType（dio 的传递依赖，但显式声明避免 depend_on_referenced_packages lint）
+  http_parser: ^4.0.2
   flutter_secure_storage: ^11.2.0
   uuid: ^4.6.0
   # 头像：从相册选图（契约 §1.7 PUT /users/me/avatar）
