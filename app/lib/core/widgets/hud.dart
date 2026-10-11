@@ -298,7 +298,7 @@ class _WaveBarsState extends State<WaveBars> with SingleTickerProviderStateMixin
                         decoration: BoxDecoration(
                           color: (i / widget.count) <= widget.progress
                               ? base.withValues(alpha: 0.9)
-                              : AppTheme.borderStrong.withValues(alpha: 0.45),
+                              : base.withValues(alpha: 0.20),
                         ),
                       ),
                     ),

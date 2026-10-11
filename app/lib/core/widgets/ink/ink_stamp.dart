@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/ink_tokens.dart';
+import '../../theme/ink_tokens.dart';
 
 /// 录音键 = 一滴生墨（v11 的唯一签名元素，也是首页最容易被做烂的地方）。
 ///

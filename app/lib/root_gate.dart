@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'core/theme/app_theme.dart';
-import 'core/widgets/mech_background.dart';
+import 'core/theme/ink_tokens.dart';
+import 'core/widgets/ink/ink.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/auth_state.dart';
 import 'features/auth/login_page.dart';
@@ -54,28 +54,36 @@ class _AuthLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg,
-      body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: MechBackground()),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text('AI 记忆卡', style: AppTheme.display),
-                const SizedBox(height: AppTheme.gapMd),
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppTheme.primary,
-                  ),
+      backgroundColor: Inks.ink,
+      body: InkSurface(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const InkSeal(size: 62),
+              const SizedBox(height: 18),
+              Text(
+                'AI 记忆卡',
+                style: TextStyle(
+                  fontFamily: kSerif,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3,
+                  color: Inks.paper,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.6,
+                  color: Inks.paper.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

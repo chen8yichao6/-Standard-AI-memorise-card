@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/env.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/hud.dart';
-import '../../core/widgets/mech_background.dart';
-import '../../core/widgets/mech_panel.dart';
+import '../../core/theme/ink_tokens.dart';
+import '../../core/widgets/ink/ink.dart';
 import 'auth_controller.dart';
 
-/// 登录 / 注册页（阶段 A 打通鉴权）。
+/// 登录 / 注册页（阶段 A 打通鉴权）—— v11「墨落」换装。
 ///
 /// 作为 `RootGate` 的未登录分支，不是 push 进来的，无返回按钮。
 /// 登录成功后 [AuthController] 状态切到已登录，由 RootGate 自动替换为首页。
+///
+/// 视觉：暗房底 + 朱砂印章 + 生宣纸表单（墨线输入）；**逻辑一字未动**。
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -90,77 +90,72 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg,
-      body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: MechBackground()),
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              children: <Widget>[
-                const SizedBox(height: AppTheme.gapXl),
-                _Brand(register: _register),
-                const SizedBox(height: AppTheme.gapXxl),
-                _ModeSwitch(register: _register, onToggle: _toggleMode),
-                const SizedBox(height: AppTheme.gapSm),
-                MechPanel(
-                  raised: true,
-                  bolts: true,
-                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      _Field(
-                        controller: _email,
-                        label: 'EMAIL',
-                        hint: 'you@example.com',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                      ),
-                      const SizedBox(height: AppTheme.gapMd),
-                      _Field(
-                        controller: _password,
-                        label: 'PASSWORD',
-                        hint: _register ? '≥8 位，含字母与数字' : '请输入密码',
-                        obscure: true,
-                        textInputAction: TextInputAction.next,
-                      ),
-                      if (_register) ...<Widget>[
-                        const SizedBox(height: AppTheme.gapMd),
-                        _Field(
-                          controller: _nickname,
-                          label: 'NICKNAME（可选）',
-                          hint: '不填则取邮箱 @ 前缀',
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _submit(),
-                        ),
-                      ],
-                      if (_error != null) ...<Widget>[
-                        const SizedBox(height: AppTheme.gapMd),
-                        _ErrorLine(message: _error!),
-                      ],
-                      const SizedBox(height: AppTheme.gapLg),
-                      _SubmitButton(
-                        loading: _loading,
-                        label: _register ? '注册并登录' : '登 录',
-                        onTap: _loading ? null : _submit,
+      backgroundColor: Inks.ink,
+      body: InkSurface(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            children: <Widget>[
+              const SizedBox(height: 24),
+              _Brand(register: _register),
+              const SizedBox(height: 32),
+              _ModeSwitch(register: _register, onToggle: _toggleMode),
+              const SizedBox(height: 14),
+              InkPanel(
+                tone: InkTone.paper,
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    InkTextField(
+                      controller: _email,
+                      label: 'EMAIL',
+                      hint: 'you@example.com',
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 18),
+                    InkTextField(
+                      controller: _password,
+                      label: 'PASSWORD',
+                      hint: _register ? '≥8 位，含字母与数字' : '请输入密码',
+                      obscure: true,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    if (_register) ...<Widget>[
+                      const SizedBox(height: 18),
+                      InkTextField(
+                        controller: _nickname,
+                        label: 'NICKNAME（可选）',
+                        hint: '不填则取邮箱 @ 前缀',
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _submit(),
                       ),
                     ],
-                  ),
+                    if (_error != null) ...<Widget>[
+                      const SizedBox(height: 16),
+                      _ErrorLine(message: _error!),
+                    ],
+                    const SizedBox(height: 22),
+                    InkButton(
+                      loading: _loading,
+                      label: _register ? '注册并登录' : '登 录',
+                      onTap: _loading ? null : _submit,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppTheme.gapMd),
-                _EndpointHint(),
-              ],
-            ),
+              ),
+              const SizedBox(height: 18),
+              const _EndpointHint(),
+            ],
           ),
-          const Positioned.fill(child: ScanSweep()),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// 顶部品牌区：标题 + 副标题 + 模式标。
+/// 顶部品牌区：朱砂印章 + 名称 + 题字 + 模式标。
 class _Brand extends StatelessWidget {
   const _Brand({required this.register});
 
@@ -170,26 +165,44 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        Text('AI 记忆卡', style: AppTheme.display),
-        const SizedBox(height: AppTheme.gapXs),
+        const InkSeal(size: 56),
+        const SizedBox(height: 16),
         Text(
-          '把每段声音，收进记忆',
-          style: AppTheme.mono.copyWith(
-            color: AppTheme.textSecondary,
-            letterSpacing: 2.4,
+          'AI 记忆卡',
+          style: TextStyle(
+            fontFamily: kSerif,
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 5,
+            color: Inks.paper,
           ),
         ),
-        const SizedBox(height: AppTheme.gapSm),
+        const SizedBox(height: 9),
         Text(
-          register ? 'REGISTER' : 'SIGN IN',
-          style: AppTheme.micro.copyWith(color: AppTheme.primary),
+          '把每段声音，收进记忆',
+          style: TextStyle(
+            fontFamily: kMono,
+            fontSize: 11,
+            letterSpacing: 3,
+            color: Inks.paperDim,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          register ? 'R E G I S T E R' : 'S I G N   I N',
+          style: TextStyle(
+            fontFamily: kMono,
+            fontSize: 10,
+            letterSpacing: 3,
+            color: Inks.paperSoft,
+          ),
         ),
       ],
     );
   }
 }
 
-/// 登录 / 注册 切换。
+/// 登录 / 注册 切换 —— 选中态靠**笔画加重**（底线变粗），不引进第四种颜色。
 class _ModeSwitch extends StatelessWidget {
   const _ModeSwitch({required this.register, required this.onToggle});
 
@@ -207,7 +220,7 @@ class _ModeSwitch extends StatelessWidget {
             onTap: () => onToggle(false),
           ),
         ),
-        const SizedBox(width: AppTheme.gapXs),
+        const SizedBox(width: 10),
         Expanded(
           child: _ModeTab(
             label: '注册',
@@ -235,94 +248,32 @@ class _ModeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? AppTheme.primary.withValues(alpha: 0.12) : null,
-          border: Border.all(
-            color: active ? AppTheme.primary : AppTheme.border,
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: kSerif,
+                fontSize: 15,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 2,
+                color: active ? Inks.paper : Inks.paperDim,
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: AppTheme.body.copyWith(
-            color: active ? AppTheme.primary : AppTheme.textSecondary,
-            fontWeight: FontWeight.w600,
+          Container(
+            height: active ? 2.4 : 0.8,
+            color: active ? Inks.paper : Inks.paper.withValues(alpha: 0.12),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// 表单输入框：HUD 标签 + 描边输入区。
-class _Field extends StatelessWidget {
-  const _Field({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    this.obscure = false,
-    this.keyboardType,
-    this.textInputAction,
-    this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final bool obscure;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-  final ValueChanged<String>? onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: AppTheme.micro.copyWith(
-            color: AppTheme.textTertiary,
-            letterSpacing: 1.4,
-          ),
-        ),
-        const SizedBox(height: AppTheme.gapXs),
-        Container(
-          decoration: BoxDecoration(
-            gradient: AppTheme.panelGradient(),
-            border: Border.all(color: AppTheme.border),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextField(
-              controller: controller,
-              obscureText: obscure,
-              keyboardType: keyboardType,
-              textInputAction: textInputAction,
-              onSubmitted: onSubmitted,
-              style: AppTheme.body.copyWith(color: AppTheme.textPrimary),
-              cursorColor: AppTheme.primary,
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(
-                  color: AppTheme.textTertiary,
-                  fontSize: 14,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 内联错误行。
+/// 内联错误行（纸上朱砂）。
 class _ErrorLine extends StatelessWidget {
   const _ErrorLine({required this.message});
 
@@ -333,12 +284,17 @@ class _ErrorLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(Icons.error_outline, color: AppTheme.danger, size: 16),
-        const SizedBox(width: AppTheme.gapXs),
+        const Icon(Icons.error_outline, color: Inks.seal, size: 15),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             message,
-            style: AppTheme.caption.copyWith(color: AppTheme.danger),
+            style: TextStyle(
+              fontFamily: kSerif,
+              fontSize: 13,
+              height: 1.35,
+              color: Inks.seal,
+            ),
           ),
         ),
       ],
@@ -346,72 +302,24 @@ class _ErrorLine extends StatelessWidget {
   }
 }
 
-/// 提交按钮。
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.loading,
-    required this.label,
-    required this.onTap,
-  });
-
-  final bool loading;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 48,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: onTap == null
-              ? null
-              : LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: <Color>[AppTheme.primaryDim, AppTheme.primaryBright],
-                ),
-          color: onTap == null ? AppTheme.bgDeep : null,
-          border: Border.all(
-            color: onTap == null ? AppTheme.border : AppTheme.primaryBright,
-          ),
-        ),
-        child: loading
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppTheme.primary,
-                ),
-              )
-            : Text(
-                label,
-                style: AppTheme.body.copyWith(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
 /// 底部联调提示：显示当前 base url，方便真机排查「连没连对后端」。
 class _EndpointHint extends StatelessWidget {
+  const _EndpointHint();
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const HudLabel('ENDPOINT', expand: true),
-        const SizedBox(height: AppTheme.gapXs),
+        const InkSectionLabel('接入点'),
+        const SizedBox(height: 8),
         Text(
           Env.apiBaseUrl,
-          style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
+          style: TextStyle(
+            fontFamily: kMono,
+            fontSize: 10.5,
+            color: Inks.paperDim,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

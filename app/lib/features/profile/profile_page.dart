@@ -2,25 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/api_exception.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/hud.dart';
-import '../../core/widgets/mech_avatar.dart';
-import '../../core/widgets/mech_background.dart';
-import '../../core/widgets/mech_panel.dart';
+import '../../core/theme/ink_tokens.dart';
+import '../../core/widgets/ink/ink.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_state.dart';
 import '../auth/models/user.dart';
 import 'settings_page.dart';
 
-/// 个人页面（P1）—— 从首页右上角头像进入。
+/// 个人页面（P1）—— 从首页右上角头像进入。v11「墨落」换装。
 ///
 /// 本期范围（PRD §3.1）：
 /// - 顶部头像（**可点击更换**，走 `PUT /users/me/avatar`）+ 昵称 + 邮箱；
 /// - 三个入口：账号 / 设置 / 关于；
-/// - 退出登录（红字，二次确认 → 真登出，清凭证回登录页）。
-///
-/// 「账号」子页排在步 3 建，本页先占位提示；
-/// 「设置」子页已建（主题更换）；「关于」直接弹窗展示，不建子页。
+/// - 退出登录（朱砂字，二次确认 → 真登出，清凭证回登录页）。
 ///
 /// 登录态变化（如上传头像后 user 刷新）通过监听 [AuthController] 自动重绘。
 class ProfilePage extends StatefulWidget {
@@ -83,86 +77,89 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (BuildContext context, AuthState state, Widget? child) {
         final User? user = state is AuthAuthenticated ? state.user : null;
         return Scaffold(
-          backgroundColor: AppTheme.bg,
-          body: Stack(
-            children: <Widget>[
-              const Positioned.fill(child: MechBackground()),
-              SafeArea(
-                child: Column(
-                  children: <Widget>[
-                    _TopBar(onBack: () => Navigator.of(context).pop()),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        children: <Widget>[
-                          _buildProfileCard(user),
-                          const SizedBox(height: AppTheme.gapXl),
-                          const HudLabel('账户与设置', expand: true),
-                          const SizedBox(height: AppTheme.gapSm),
-                          MechPanel(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Column(
-                              children: <Widget>[
-                                _EntryTile(
-                                  icon: Icons.person_outline,
-                                  title: '账号',
-                                  subtitle: user?.email ?? '—',
-                                  onTap: () =>
-                                      _showTodo(context, '账号区下一板块接入'),
-                                ),
-                                const _EntryDivider(),
-                                _EntryTile(
-                                  icon: Icons.palette_outlined,
-                                  title: '设置',
-                                  subtitle: '主题更换',
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => const SettingsPage(),
-                                    ),
-                                  ),
-                                ),
-                                const _EntryDivider(),
-                                _EntryTile(
-                                  icon: Icons.info_outline,
-                                  title: '关于',
-                                  subtitle: 'v0.1.0',
-                                  onTap: () => _showAbout(context),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.gapSm),
-                          MechPanel(
-                            onTap: () => _confirmLogout(context),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Icon(Icons.logout,
-                                    color: AppTheme.danger, size: 18),
-                                SizedBox(width: AppTheme.gapXs),
-                                Text(
-                                  '退出登录',
-                                  style: TextStyle(
-                                    color: AppTheme.danger,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+          backgroundColor: Inks.ink,
+          body: InkSurface(
+            child: SafeArea(
+              child: Column(
+                children: <Widget>[
+                  InkAppBar(
+                    title: '个人中心',
+                    subtitle: 'PROFILE',
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
                       ),
+                      children: <Widget>[
+                        _buildProfileCard(user),
+                        const SizedBox(height: 28),
+                        const InkSectionLabel('账户与设置', expand: true),
+                        const SizedBox(height: 12),
+                        InkPanel(
+                          tone: InkTone.dark,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            children: <Widget>[
+                              _EntryTile(
+                                icon: Icons.person_outline,
+                                title: '账号',
+                                subtitle: user?.email ?? '—',
+                                onTap: () =>
+                                    _showTodo(context, '账号区下一板块接入'),
+                              ),
+                              const InkHairline(indent: 49),
+                              _EntryTile(
+                                icon: Icons.palette_outlined,
+                                title: '设置',
+                                subtitle: '主题更换',
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const SettingsPage(),
+                                  ),
+                                ),
+                              ),
+                              const InkHairline(indent: 49),
+                              _EntryTile(
+                                icon: Icons.info_outline,
+                                title: '关于',
+                                subtitle: 'v0.1.0',
+                                onTap: () => _showAbout(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        InkPanel(
+                          tone: InkTone.dark,
+                          onTap: () => _confirmLogout(context),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              const Icon(Icons.logout, color: Inks.seal, size: 17),
+                              const SizedBox(width: 8),
+                              Text(
+                                '退出登录',
+                                style: TextStyle(
+                                  fontFamily: kSerif,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1,
+                                  color: Inks.seal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Positioned.fill(child: ScanSweep()),
-            ],
+            ),
           ),
         );
       },
@@ -170,41 +167,55 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileCard(User? user) {
-    return MechPanel(
-      raised: true,
-      bolts: true,
+    return InkPanel(
+      tone: InkTone.dark,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Row(
         children: <Widget>[
           // 点击头像 → 选图上传（契约 §1.7）。上传中禁用重复点击。
-          MechAvatar(
+          InkAvatar(
             size: 72,
             imageUrl: user?.avatarUrl,
+            fallbackText: user?.nickname ?? user?.email,
             onTap: _uploading ? null : _pickAndUploadAvatar,
           ),
-          const SizedBox(width: AppTheme.gapMd),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
                   user?.nickname ?? '未登录',
-                  style: AppTheme.title.copyWith(fontSize: 20),
+                  style: TextStyle(
+                    fontFamily: kSerif,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Inks.paper,
+                  ),
                 ),
-                const SizedBox(height: AppTheme.gapXxs),
+                const SizedBox(height: 6),
                 Text(
                   _uploading ? '正在上传头像…' : (user?.email ?? '账号区待接入'),
-                  style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
+                  style: TextStyle(
+                    fontFamily: kMono,
+                    fontSize: 11,
+                    color: Inks.paperDim,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: AppTheme.gapXxs),
+                const SizedBox(height: 7),
                 Text(
                   '点击头像可更换',
-                  style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
+                  style: TextStyle(
+                    fontFamily: kSerif,
+                    fontSize: 11.5,
+                    color: Inks.paperDim,
+                  ),
                 ),
               ],
             ),
           ),
-          Text('P1', style: AppTheme.micro),
         ],
       ),
     );
@@ -221,14 +232,19 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surfaceRaised,
+          backgroundColor: Inks.inkSoft,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(2),
-            side: BorderSide(color: AppTheme.borderStrong),
+            side: BorderSide(color: Inks.paper.withValues(alpha: 0.14)),
           ),
           title: Text(
             'AI 记忆卡',
-            style: TextStyle(color: AppTheme.textPrimary, fontSize: 17),
+            style: TextStyle(
+              fontFamily: kSerif,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: Inks.paper,
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -236,19 +252,34 @@ class _ProfilePageState extends State<ProfilePage> {
             children: <Widget>[
               Text(
                 'v0.1.0',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                style: TextStyle(
+                  fontFamily: kMono,
+                  fontSize: 11,
+                  color: Inks.paperDim,
+                ),
               ),
-              SizedBox(height: AppTheme.gapSm),
+              const SizedBox(height: 10),
               Text(
                 '把每一段声音，沉淀成可调用的记忆。',
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                style: TextStyle(
+                  fontFamily: kSerif,
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Inks.paperSoft,
+                ),
               ),
             ],
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('知道了'),
+              child: Text(
+                '知道了',
+                style: TextStyle(
+                  fontFamily: kSerif,
+                  color: Inks.paperSoft,
+                ),
+              ),
             ),
           ],
         );
@@ -261,23 +292,36 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surfaceRaised,
+          backgroundColor: Inks.inkSoft,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(2),
-            side: BorderSide(color: AppTheme.borderStrong),
+            side: BorderSide(color: Inks.paper.withValues(alpha: 0.14)),
           ),
           title: Text(
             '确认退出登录？',
-            style: TextStyle(color: AppTheme.textPrimary, fontSize: 17),
+            style: TextStyle(
+              fontFamily: kSerif,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: Inks.paper,
+            ),
           ),
           content: Text(
             '退出后将清除本地登录凭证，回到登录页。',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+            style: TextStyle(
+              fontFamily: kSerif,
+              fontSize: 14,
+              height: 1.5,
+              color: Inks.paperSoft,
+            ),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
+              child: Text(
+                '取消',
+                style: TextStyle(fontFamily: kSerif, color: Inks.paperDim),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -288,7 +332,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
                 }
               },
-              child: Text('退出', style: TextStyle(color: AppTheme.danger)),
+              child: Text(
+                '退出',
+                style: TextStyle(fontFamily: kSerif, color: Inks.seal),
+              ),
             ),
           ],
         );
@@ -297,42 +344,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-/// 个人页顶栏：返回箭头 + 标题。
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 20, 10),
-      child: Row(
-        children: <Widget>[
-          InkWell(
-            onTap: onBack,
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                Icons.arrow_back,
-                color: AppTheme.textSecondary,
-                size: 22,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppTheme.gapXs),
-          Text('个人中心', style: AppTheme.title),
-          const SizedBox(width: AppTheme.gapXs),
-          Container(width: 1, height: 14, color: AppTheme.border),
-          const SizedBox(width: AppTheme.gapXs),
-          Text('PROFILE', style: AppTheme.micro),
-        ],
-      ),
-    );
-  }
-}
-
-/// 一个入口行：图标 + 标题 + 右侧副文字 + 箭头。
+/// 一个入口行：墨线图标 + 衬线标题 + 右侧等宽副文字 + 箭头。
 class _EntryTile extends StatelessWidget {
   const _EntryTile({
     required this.icon,
@@ -354,36 +366,38 @@ class _EntryTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         child: Row(
           children: <Widget>[
-            Icon(icon, color: AppTheme.textSecondary, size: 20),
-            const SizedBox(width: AppTheme.gapSm),
+            Icon(icon, color: Inks.paperDim, size: 19),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: AppTheme.body.copyWith(fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontFamily: kSerif,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Inks.paper,
+                ),
               ),
             ),
             if (subtitle != null) ...<Widget>[
-              Text(subtitle!, style: AppTheme.micro),
-              const SizedBox(width: AppTheme.gapXs),
+              Text(
+                subtitle!,
+                style: TextStyle(
+                  fontFamily: kMono,
+                  fontSize: 10.5,
+                  color: Inks.paperDim,
+                ),
+              ),
+              const SizedBox(width: 8),
             ],
-            Icon(Icons.chevron_right, color: AppTheme.textTertiary, size: 18),
+            Icon(
+              Icons.chevron_right,
+              color: Inks.paper.withValues(alpha: 0.35),
+              size: 18,
+            ),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// 入口之间的细分隔线（左右留边）。
-class _EntryDivider extends StatelessWidget {
-  const _EntryDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 0.8,
-      margin: const EdgeInsets.only(left: 48),
-      color: AppTheme.divider(),
     );
   }
 }

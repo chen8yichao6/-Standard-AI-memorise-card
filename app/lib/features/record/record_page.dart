@@ -1,22 +1,20 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/ink_tokens.dart';
 import '../../core/widgets/hud.dart';
-import '../../core/widgets/mech_background.dart';
-import '../../core/widgets/mech_panel.dart';
+import '../../core/widgets/ink/ink.dart';
 import '../../data/mock/mock_seed.dart';
 import '../../data/recordings/recording_store.dart';
 import '../../services/recording_service.dart';
 
-/// 录音功能页（P3）—— 真录音。
+/// 录音功能页（P3）—— 真录音，v11「墨落」换装。
 ///
-/// 2026-10-10 接入 `record` 插件：点录音键开始真录音（写本地 m4a），
-/// 再点停止 → 写入 [RecordingStore] → 回首页，列表顶部出现新录音可回放。
-/// 计时器走真时间，波形 / dB 电平随录音状态切换。
+/// 接入 `record` 插件：点墨点开始真录音（写本地 m4a），再点停止 →
+/// 写入 [RecordingStore] → 回上一页，列表顶部出现新录音可回放。
+/// 计时器走真时间，电平随录音状态切换。录音键复用首页同一滴墨（[InkStamp]）。
 class RecordPage extends StatefulWidget {
   const RecordPage({super.key});
 
@@ -117,8 +115,7 @@ class _RecordPageState extends State<RecordPage> {
   }
 
   void _toast(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   String _fmt(Duration d) {
@@ -144,280 +141,121 @@ class _RecordPageState extends State<RecordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg,
-      body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: MechBackground()),
-          SafeArea(
-            child: Column(
-              children: <Widget>[
-                _TopBar(recording: _recording),
-                Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      const SizedBox(height: AppTheme.gapXs),
-                      Text(
-                        _fmt(_elapsed),
-                        style: AppTheme.numeralLarge.copyWith(fontSize: 62),
+      backgroundColor: Inks.ink,
+      body: InkSurface(
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              InkAppBar(
+                title: '录音',
+                subtitle: _recording ? 'REC' : 'STANDBY',
+                onBack: () => Navigator.of(context).pop(),
+                showDivider: false,
+              ),
+              Expanded(
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 10),
+                    Text(
+                      _fmt(_elapsed),
+                      style: TextStyle(
+                        fontFamily: kMono,
+                        fontSize: 52,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 3,
+                        color: Inks.paper,
                       ),
-                      const SizedBox(height: AppTheme.gapXxs),
-                      Text(
-                        _recording ? 'REC · 采集中' : 'STANDBY · 未开始采集',
-                        style: AppTheme.micro.copyWith(
-                          color: _recording
-                              ? AppTheme.danger
-                              : AppTheme.textTertiary,
-                        ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _recording ? '正在录音 · 按一下结束' : '按一下墨点，开始记录',
+                      style: TextStyle(
+                        fontFamily: kSerif,
+                        fontSize: 12.5,
+                        letterSpacing: 1,
+                        color: _recording ? Inks.record : Inks.paperDim,
                       ),
-                      const Spacer(),
-                      _RecordButton(
-                        recording: _recording,
-                        onTap: _toggle,
-                      ),
-                      const SizedBox(height: AppTheme.gapXxl),
-                      Text(
-                        _recording ? '点击停止并保存' : '点击开始录音',
-                        style: AppTheme.caption,
-                      ),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: MechPanel(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  const HudLabel('输入电平'),
-                                  const Spacer(),
-                                  Text(
-                                    _recording && _dB != null
-                                        ? '${_dB!.toStringAsFixed(0)} dB'
-                                        : '-∞ dB',
-                                    style: AppTheme.micro.copyWith(
-                                      color: _recording
-                                          ? AppTheme.primary
-                                          : AppTheme.textTertiary,
-                                    ),
+                    ),
+                    const Spacer(),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: InkStamp(recording: _recording, onTap: _toggle),
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: InkPanel(
+                        tone: InkTone.dark,
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                const InkSectionLabel('输入电平'),
+                                const Spacer(),
+                                Text(
+                                  _recording && _dB != null
+                                      ? '${_dB!.toStringAsFixed(0)} dB'
+                                      : '-∞ dB',
+                                  style: TextStyle(
+                                    fontFamily: kMono,
+                                    fontSize: 11,
+                                    color: _recording
+                                        ? Inks.paper
+                                        : Inks.paperDim,
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: AppTheme.gapSm),
-                              WaveBars(
-                                count: 36,
-                                height: 26,
-                                animate: _recording,
-                              ),
-                              const SizedBox(height: AppTheme.gapXs),
-                              CalibrationRuler(
-                                divisions: 30,
-                                height: 7,
-                                color: AppTheme.textTertiary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.gapSm),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: HudBar(
-                          items: <HudItem>[
-                            const HudItem(label: 'FORMAT', value: 'M4A / AAC-LC'),
-                            const HudItem(label: 'RATE', value: '44.1 kHz'),
-                            HudItem(
-                              label: 'BIT',
-                              value: '128k',
-                              valueColor: _recording
-                                  ? AppTheme.primary
-                                  : AppTheme.textSecondary,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            WaveBars(
+                              count: 36,
+                              height: 26,
+                              animate: _recording,
+                              color: Inks.paper,
+                            ),
+                            const SizedBox(height: 10),
+                            CalibrationRuler(
+                              divisions: 30,
+                              height: 7,
+                              color: Inks.paper.withValues(alpha: 0.45),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: AppTheme.gapXs),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 顶栏：返回 + 标题 + 呼吸指示灯 + 状态字。
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.recording});
-
-  final bool recording;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 20, 8),
-          child: Row(
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.chevron_left, color: AppTheme.textPrimary),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              const SizedBox(width: AppTheme.gapXxs),
-              Text('录音', style: AppTheme.title),
-              const Spacer(),
-              PulseDot(
-                size: 6,
-                color: recording ? AppTheme.danger : null,
-                period: recording
-                    ? const Duration(milliseconds: 900)
-                    : const Duration(seconds: 2),
-              ),
-              const SizedBox(width: AppTheme.gapXs),
-              Text(
-                recording ? 'REC' : 'STANDBY',
-                style: AppTheme.micro.copyWith(
-                  color: recording ? AppTheme.danger : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: <Widget>[
+                          const Expanded(
+                            child: InkTag(label: 'FORMAT', value: 'M4A/AAC-LC'),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: InkTag(label: 'RATE', value: '44.1 kHz'),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: InkTag(
+                              label: 'BIT',
+                              value: '128k',
+                              valueColor: _recording ? Inks.paper : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: HudBar(
-            items: <HudItem>[
-              HudItem(
-                label: 'MIC',
-                value: recording ? 'LIVE' : 'IDLE',
-                valueColor: recording ? AppTheme.danger : AppTheme.textSecondary,
-              ),
-              const HudItem(label: 'GAIN', value: '0 dB'),
-              const HudItem(label: 'TRACK', value: '01'),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 中央录音键：外刻度环 + 内圆 + 麦克风/停止。
-///
-/// 2026-10-06 Day 9 修复：原实现用裸 `GestureDetector`，点下去毫无反馈，
-/// 与历史录音行（`InkWell` 有涟漪）是两套交互标准。改为有状态组件：
-/// 按下时内键缩到 0.92、辉光减弱、描边转亮青；松开/取消弹回。
-/// 2026-10-10 接入真录音：录音中图标转红色停止键。
-class _RecordButton extends StatefulWidget {
-  const _RecordButton({required this.onTap, required this.recording});
-
-  final VoidCallback onTap;
-  final bool recording;
-
-  @override
-  State<_RecordButton> createState() => _RecordButtonState();
-}
-
-class _RecordButtonState extends State<_RecordButton> {
-  bool _pressed = false;
-
-  void _setPressed(bool value) {
-    if (_pressed == value) return;
-    setState(() => _pressed = value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color keyColor = widget.recording ? AppTheme.danger : AppTheme.primary;
-    return SizedBox(
-      width: 148,
-      height: 148,
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          // 刻度环
-          const Positioned.fill(
-            child: CustomPaint(painter: _DialRingPainter()),
-          ),
-          // 外圈
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: widget.recording
-                    ? AppTheme.danger.withValues(alpha: 0.5)
-                    : AppTheme.border,
-              ),
-              gradient: AppTheme.panelGradient(),
-            ),
-          ),
-          // 内键（带按压态）
-          GestureDetector(
-            onTap: widget.onTap,
-            onTapDown: (_) => _setPressed(true),
-            onTapUp: (_) => _setPressed(false),
-            onTapCancel: () => _setPressed(false),
-            child: AnimatedScale(
-              scale: _pressed ? 0.92 : 1.0,
-              duration: const Duration(milliseconds: 120),
-              curve: Curves.easeOut,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 120),
-                curve: Curves.easeOut,
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _pressed ? AppTheme.surface : AppTheme.surfaceRaised,
-                  border: Border.all(color: keyColor, width: 1.6),
-                  boxShadow: AppTheme.glow(
-                    color: keyColor,
-                    opacity: _pressed ? 0.10 : 0.22,
-                  ),
-                ),
-                child: widget.recording
-                    ? Icon(Icons.stop, color: keyColor, size: 30)
-                    : Icon(Icons.mic_none, color: keyColor, size: 34),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
-}
-
-/// 外圈刻度环：72 根短刻度，每 6 根一条长刻度。
-class _DialRingPainter extends CustomPainter {
-  const _DialRingPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Offset c = Offset(size.width / 2, size.height / 2);
-    final Paint p = Paint()..strokeWidth = 1.2;
-    const int total = 72;
-    for (int i = 0; i < total; i++) {
-      final double a = i * 2 * math.pi / total - math.pi / 2;
-      final bool major = i % 6 == 0;
-      final double r1 = size.width / 2 - (major ? 12 : 8);
-      final double r2 = size.width / 2 - 2;
-      p.color = major
-          ? AppTheme.primary.withValues(alpha: 0.7)
-          : AppTheme.borderStrong.withValues(alpha: 0.45);
-      canvas.drawLine(
-        c + Offset(math.cos(a) * r1, math.sin(a) * r1),
-        c + Offset(math.cos(a) * r2, math.sin(a) * r2),
-        p,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

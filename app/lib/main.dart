@@ -13,7 +13,7 @@ Future<void> main() async {
 /// 应用根组件。
 /// 只负责：挂主题 + 指定入口页。不接路由、不接网络、不接登录（本期不做）。
 ///
-/// 入口是启动页（Splash），播完 1.6s 动画后自己 `pushReplacement` 到首页。
+/// 入口是启动页（Splash），播完 1.9s 动画后自己 `pushReplacement` 到根门。
 class AiMemoryCardApp extends StatelessWidget {
   const AiMemoryCardApp({super.key});
 

@@ -3,15 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/ink_tokens.dart';
 import '../../core/widgets/hud.dart';
-import '../../core/widgets/mech_background.dart';
-import '../../core/widgets/mech_panel.dart';
+import '../../core/widgets/ink/ink.dart';
 import '../../data/mock/mock_seed.dart';
 
-/// 历史录音详情页（P3a）—— 真回放。
+/// 历史录音详情页（P3a）—— 真回放。v11「墨落」换装。
 ///
-/// 2026-10-10 接入 `just_audio`：按 [RecordingItem.filePath] 加载本地音频，
+/// 接入 `just_audio`：按 [RecordingItem.filePath] 加载本地音频，
 /// 播放/暂停切换、进度条与波形着色走真实播放进度。
 /// 种子数据没有真文件（filePath 为 null）时降级为「无音频文件」提示，不崩溃。
 class RecordingDetailPage extends StatefulWidget {
@@ -97,8 +96,7 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
 
   double get _progress {
     if (_duration.inMilliseconds <= 0) return 0.0;
-    return (_position.inMilliseconds / _duration.inMilliseconds)
-        .clamp(0.0, 1.0);
+    return (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
   }
 
   String _fmt(Duration d) {
@@ -110,130 +108,109 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bg,
-      body: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: MechBackground()),
-          SafeArea(
-            child: Column(
-              children: <Widget>[
-                const _TopBar(),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: <Widget>[
-                      const SizedBox(height: AppTheme.gapXs),
-                      Text(widget.item.title, style: AppTheme.display),
-                      const SizedBox(height: AppTheme.gapSm),
-                      Row(
+      backgroundColor: Inks.ink,
+      body: InkSurface(
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              InkAppBar(
+                title: '录音详情',
+                subtitle: 'PLAYBACK',
+                onBack: () => Navigator.of(context).pop(),
+                showDivider: false,
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  children: <Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.item.title,
+                      style: TextStyle(
+                        fontFamily: kSerif,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: Inks.paper,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: <Widget>[
+                        InkTag(label: 'DATE', value: widget.item.date),
+                        const SizedBox(width: 8),
+                        InkTag(
+                          label: 'LEN',
+                          value: widget.item.duration,
+                          valueColor: Inks.paper,
+                        ),
+                        const SizedBox(width: 8),
+                        InkTag(
+                          label: 'ID',
+                          value: widget.item.id.toUpperCase(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    const InkSectionLabel('波形预览'),
+                    const SizedBox(height: 12),
+                    InkPanel(
+                      tone: InkTone.dark,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                      child: Column(
                         children: <Widget>[
-                          _MetaChip(label: 'DATE', value: widget.item.date),
-                          const SizedBox(width: AppTheme.gapXs),
-                          _MetaChip(
-                            label: 'LEN',
-                            value: widget.item.duration,
-                            valueColor: AppTheme.primary,
+                          WaveBars(
+                            count: 40,
+                            height: 64,
+                            progress: _ready ? _progress : 0.0,
+                            color: Inks.paper,
                           ),
-                          const SizedBox(width: AppTheme.gapXs),
-                          _MetaChip(
-                            label: 'ID',
-                            value: widget.item.id.toUpperCase(),
+                          const SizedBox(height: 12),
+                          CalibrationRuler(
+                            divisions: 40,
+                            height: 7,
+                            color: Inks.paper.withValues(alpha: 0.45),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppTheme.gapXl),
-                      const HudLabel('波形预览'),
-                      const SizedBox(height: AppTheme.gapSm),
-                      MechPanel(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                        child: Column(
-                          children: <Widget>[
-                            WaveBars(
-                              count: 40,
-                              height: 64,
-                              progress: _ready ? _progress : 0.0,
-                            ),
-                            const SizedBox(height: AppTheme.gapXs),
-                            CalibrationRuler(
-                              divisions: 40,
-                              height: 7,
-                              color: AppTheme.textTertiary,
-                            ),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(height: 22),
+                    _PlayerPanel(
+                      ready: _ready,
+                      playing: _playing,
+                      completed: _completed,
+                      position: _position,
+                      duration: _duration,
+                      progress: _progress,
+                      onToggle: _togglePlay,
+                    ),
+                    const SizedBox(height: 24),
+                    const InkHairline(),
+                    const SizedBox(height: 14),
+                    Text(
+                      widget.item.filePath == null
+                          ? '该记录为示例数据，无音频文件；录一段新录音即可回放。'
+                          : '转写、纪要、纠错入口不在本期范围（第一阶段只跑通录音与回放）。',
+                      style: TextStyle(
+                        fontFamily: kSerif,
+                        fontSize: 12,
+                        height: 1.55,
+                        color: Inks.paperDim,
                       ),
-                      const SizedBox(height: AppTheme.gapLg),
-                      _PlayerPanel(
-                        ready: _ready,
-                        playing: _playing,
-                        completed: _completed,
-                        position: _position,
-                        duration: _duration,
-                        progress: _progress,
-                        onToggle: _togglePlay,
-                      ),
-                      const SizedBox(height: AppTheme.gapLg),
-                      const TechDivider(label: 'TRACK INFO'),
-                      const SizedBox(height: AppTheme.gapSm),
-                      Text(
-                        widget.item.filePath == null
-                            ? '该记录为示例数据，无音频文件；录一段新录音即可回放。'
-                            : '转写、纪要、纠错入口不在本期范围（第一阶段只跑通录音与回放）。',
-                        style: AppTheme.micro.copyWith(
-                          color: AppTheme.textTertiary,
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.gapLg),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// 元信息小胶囊：`DATE 09-28`。
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.label, required this.value, this.valueColor});
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            label,
-            style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
-          ),
-          const SizedBox(height: AppTheme.gapXxs),
-          Text(
-            value,
-            style: AppTheme.mono.copyWith(
-              color: valueColor ?? AppTheme.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 真播放器：切角面板 + 播放/暂停键 + 当前时间/总时长 + 真实进度条。
+/// 播放器：暗房面板 + 墨线播放键 + 当前时间/总时长 + 纸色进度条。
 class _PlayerPanel extends StatelessWidget {
   const _PlayerPanel({
     required this.ready,
@@ -261,7 +238,7 @@ class _PlayerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color keyColor = ready ? AppTheme.primary : AppTheme.textTertiary;
+    final Color keyColor = ready ? Inks.paper : Inks.paperDim;
     final String status = !ready
         ? '无音频文件'
         : playing
@@ -269,8 +246,8 @@ class _PlayerPanel extends StatelessWidget {
             : completed
                 ? '已播完 · 点击重播'
                 : '已就绪';
-    return MechPanel(
-      cornerTag: true,
+    return InkPanel(
+      tone: InkTone.dark,
       padding: const EdgeInsets.all(18),
       child: Column(
         children: <Widget>[
@@ -283,7 +260,6 @@ class _PlayerPanel extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppTheme.surfaceRaised,
                     border: Border.all(color: keyColor, width: 1.5),
                   ),
                   child: Icon(
@@ -291,21 +267,31 @@ class _PlayerPanel extends StatelessWidget {
                         ? Icons.pause
                         : (completed ? Icons.replay : Icons.play_arrow),
                     color: keyColor,
-                    size: 26,
+                    size: 24,
                   ),
                 ),
               ),
-              const SizedBox(width: AppTheme.gapMd),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(_fmt(position), style: AppTheme.numeral),
-                    const SizedBox(height: AppTheme.gapXxs),
+                    Text(
+                      _fmt(position),
+                      style: TextStyle(
+                        fontFamily: kMono,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Inks.paper,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
                     Text(
                       status,
-                      style: AppTheme.micro.copyWith(
-                        color: playing ? AppTheme.primary : AppTheme.textTertiary,
+                      style: TextStyle(
+                        fontFamily: kSerif,
+                        fontSize: 11.5,
+                        color: playing ? Inks.paper : Inks.paperDim,
                       ),
                     ),
                   ],
@@ -313,49 +299,26 @@ class _PlayerPanel extends StatelessWidget {
               ),
               Text(
                 _fmt(duration),
-                style: AppTheme.mono.copyWith(color: AppTheme.textTertiary),
+                style: TextStyle(
+                  fontFamily: kMono,
+                  fontSize: 11.5,
+                  color: Inks.paperDim,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppTheme.gapMd),
-          // 真实进度条：暗槽 + 青色已播放段
+          const SizedBox(height: 16),
+          // 真实进度条：暗槽 + 纸色已播放段
           Container(
-            height: 3,
-            color: AppTheme.bgDeep,
+            height: 2.4,
+            color: Inks.paper.withValues(alpha: 0.12),
             child: Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
                 widthFactor: progress,
-                child: Container(color: AppTheme.primary),
+                child: Container(color: Inks.paper),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 顶栏：返回 + 标题。
-class _TopBar extends StatelessWidget {
-  const _TopBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 20, 8),
-      child: Row(
-        children: <Widget>[
-          IconButton(
-            icon: Icon(Icons.chevron_left, color: AppTheme.textPrimary),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          const SizedBox(width: AppTheme.gapXxs),
-          Text('录音详情', style: AppTheme.title),
-          const Spacer(),
-          Text(
-            'PLAYBACK',
-            style: AppTheme.micro.copyWith(color: AppTheme.textTertiary),
           ),
         ],
       ),

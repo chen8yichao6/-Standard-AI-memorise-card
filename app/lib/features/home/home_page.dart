@@ -12,7 +12,7 @@ import '../../services/recording_service.dart';
 import '../profile/profile_page.dart';
 import '../record/record_page.dart';
 import '../record/recording_detail_page.dart';
-import 'widgets/ink_stamp.dart';
+import '../../core/widgets/ink/ink_stamp.dart';
 
 /// 首页（P2）—— v11「墨落」落地版。
 ///
