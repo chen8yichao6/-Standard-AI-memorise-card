@@ -8,5 +8,6 @@ export 'ink_app_bar.dart';
 export 'ink_fonts.dart';
 export 'ink_kit.dart';
 export 'ink_panel.dart';
+export 'ink_recording_row.dart';
 export 'ink_stamp.dart';
 export 'ink_surface.dart';

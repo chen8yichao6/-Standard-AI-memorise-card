@@ -28,7 +28,7 @@ class InkSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: <Widget>[
-        const Positioned.fill(child: ColoredBox(color: Inks.ink)),
+        Positioned.fill(child: ColoredBox(color: Inks.ink)),
         Positioned.fill(
           child: IgnorePointer(
             child: Opacity(

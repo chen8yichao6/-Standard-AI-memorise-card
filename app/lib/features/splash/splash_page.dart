@@ -103,7 +103,7 @@ class _SplashPageState extends State<SplashPage>
   Widget build(BuildContext context) {
     if (MediaQuery.of(context).disableAnimations) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _goHome());
-      return const ColoredBox(color: Inks.ink);
+      return ColoredBox(color: Inks.ink);
     }
 
     return Scaffold(

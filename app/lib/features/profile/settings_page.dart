@@ -37,7 +37,7 @@ class SettingsPage extends StatelessWidget {
                     const InkSectionLabel('主题', expand: true),
                     const SizedBox(height: 10),
                     Text(
-                      '开发者上传 · 用户只选',
+                      '开发者上传 · 用户只选（只换纸墨冷暖，朱砂与显影不变）',
                       style: TextStyle(
                         fontFamily: kSerif,
                         fontSize: 12,
@@ -88,22 +88,26 @@ class _ThemeCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
       child: Row(
         children: <Widget>[
-          // 色块预览：用该主题的底色 + 主色，直观看到「这套长什么样」。
+          // 色块预览：纸色打底（冷暖差异一眼可辨）+ 朱砂印点。
+          // 不画墨底——两套主题的墨都很深，并排看不出区别；纸色才分得开。
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: theme.bg,
-              border: Border.all(color: theme.border),
+              color: theme.sheetBg,
+              border: Border.all(color: theme.inkOnPaper, width: 0.6),
               borderRadius: BorderRadius.circular(2),
             ),
             child: Center(
               child: Container(
-                width: 14,
-                height: 14,
+                width: 15,
+                height: 15,
                 decoration: BoxDecoration(
                   color: theme.primary,
-                  border: Border.all(color: theme.primaryBright, width: 0.5),
+                  border: Border.all(
+                    color: theme.inkOnPaper.withValues(alpha: 0.35),
+                    width: 0.5,
+                  ),
                 ),
               ),
             ),

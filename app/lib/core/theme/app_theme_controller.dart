@@ -18,7 +18,7 @@ class AppThemeController extends ChangeNotifier {
 
   static const String _keyThemeId = 'theme_id';
 
-  ThemeSpec _spec = ThemeSpec.dark;
+  ThemeSpec _spec = ThemeSpec.night;
   ThemeSpec get spec => _spec;
   ThemeData get themeData => _spec.toThemeData();
 
