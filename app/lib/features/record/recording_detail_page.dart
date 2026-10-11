@@ -99,12 +99,6 @@ class _RecordingDetailPageState extends State<RecordingDetailPage> {
     return (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
   }
 
-  String _fmt(Duration d) {
-    final int m = d.inMinutes;
-    final int s = d.inSeconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

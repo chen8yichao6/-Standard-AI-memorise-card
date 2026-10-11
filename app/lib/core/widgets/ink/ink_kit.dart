@@ -323,7 +323,7 @@ class InkAvatar extends StatelessWidget {
           height: size,
           fit: BoxFit.cover,
           // presigned 过期 / 网络故障 → 回退首字态，不留白块。
-          errorBuilder: (_, __, ___) => _fallback(),
+          errorBuilder: (_, _, _) => _fallback(),
         ),
       );
     } else {

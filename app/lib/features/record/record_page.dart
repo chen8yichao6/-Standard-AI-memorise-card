@@ -30,7 +30,6 @@ class _RecordPageState extends State<RecordPage> {
   Timer? _timer;
   StreamSubscription<Amplitude>? _ampSub;
   double? _dB; // 录音中的实时电平（dBFS）；null = 未录音（-∞）
-  String? _currentPath;
 
   @override
   void dispose() {
@@ -50,7 +49,7 @@ class _RecordPageState extends State<RecordPage> {
 
   Future<void> _start() async {
     try {
-      final String path = await _service.start();
+      await _service.start();
       if (!mounted) {
         // 页面已销毁：立即停止，避免录音泄漏。
         await _service.stop();
@@ -60,7 +59,6 @@ class _RecordPageState extends State<RecordPage> {
         _recording = true;
         _elapsed = Duration.zero;
         _dB = null;
-        _currentPath = path;
       });
       // 计时器：每秒 +1s
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
