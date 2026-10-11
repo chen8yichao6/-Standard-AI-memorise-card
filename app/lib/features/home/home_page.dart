@@ -604,7 +604,6 @@ class _RecentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool tc = item.isTranscribing;
-    final Color mainColor = tc ? Inks.progress : Inks.paper;
     return InkWell(
       onTap: onTap,
       child: Column(
