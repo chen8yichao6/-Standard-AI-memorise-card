@@ -29,6 +29,18 @@ enum RecordingType {
   const RecordingType(this.label);
 }
 
+/// 转写状态 —— 驱动首页列表的「显影」态（v11 母题第三动作）。
+///
+/// - [ready]：墨已定，字清晰（普通墨色）
+/// - [transcribing]：正在显影（琥珀色 + 标题由模糊浮到清晰）
+enum RecordStatus {
+  ready('转写完成'),
+  transcribing('转写中');
+
+  final String label;
+  const RecordStatus(this.label);
+}
+
 /// 一条录音记录（最近录音列表里的项）。
 ///
 /// 元信息来源：种子数据写死；真录音写入后走 `recordings_index.json`。
@@ -41,15 +53,22 @@ class RecordingItem {
     required this.duration,
     required this.date,
     required this.type,
+    this.status = RecordStatus.ready,
     this.filePath,
   });
 
   final String id;
   final String title;
   final String duration;
+
+  /// 展示用时间串（种子数据直接写「今天 14:32」这类成品文案）。
   final String date;
   final RecordingType type;
+  final RecordStatus status;
   final String? filePath;
+
+  /// 显影态（转写中）——首页据此上琥珀色 + 模糊动画。
+  bool get isTranscribing => status == RecordStatus.transcribing;
 
   /// 序列化（写 `recordings_index.json` 用）。
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -58,10 +77,12 @@ class RecordingItem {
         'duration': duration,
         'date': date,
         'type': type.name,
+        'status': status.name,
         'filePath': filePath,
       };
 
   /// 反序列化（读 `recordings_index.json` 用）。
+  /// [status] 缺失时回退 [RecordStatus.ready]（兼容旧的、没有该字段的索引文件）。
   factory RecordingItem.fromJson(Map<String, dynamic> json) => RecordingItem(
         id: json['id'] as String,
         title: json['title'] as String,
@@ -70,6 +91,10 @@ class RecordingItem {
         type: RecordingType.values.firstWhere(
           (RecordingType t) => t.name == json['type'],
           orElse: () => RecordingType.meeting,
+        ),
+        status: RecordStatus.values.firstWhere(
+          (RecordStatus s) => s.name == json['status'],
+          orElse: () => RecordStatus.ready,
         ),
         filePath: json['filePath'] as String?,
       );
@@ -80,31 +105,32 @@ const List<FeatureItem> mockFeatures = <FeatureItem>[
   FeatureItem(id: 'record', title: '录音', subtitle: '记录每一段声音'),
 ];
 
-/// 最近录音 —— 写死的元信息（只当种子）。
+/// 最近录音 —— 种子（只当首次启动的初始内容）。
 ///
-/// 类型分布：会议 / 课堂 / 训练 各 1 条，「采访」类型刻意留空 ——
-/// 分类筛选用它测「无结果」态（选采访 → 0 条）。
+/// 文案与状态对齐 v11 设计稿：三条里第二条处于「转写中」，
+/// 用于展示首页暗房的「显影」动画（模糊 → 清晰）。
 const List<RecordingItem> mockRecordings = <RecordingItem>[
   RecordingItem(
     id: 'r1',
-    title: '班会纪要',
-    duration: '12:30',
-    date: '09-28',
+    title: '马原小组讨论 · 第三周',
+    duration: '42:18',
+    date: '今天 14:32 · 会议纪要已生成',
     type: RecordingType.meeting,
   ),
   RecordingItem(
     id: 'r2',
-    title: '英语课笔记',
-    duration: '45:08',
-    date: '09-27',
+    title: '考研英语真题精讲',
+    duration: '58:40',
+    date: '昨天 19:05 · 转写中',
     type: RecordingType.classNote,
+    status: RecordStatus.transcribing,
   ),
   RecordingItem(
     id: 'r3',
-    title: '太极训练心得',
-    duration: '08:15',
-    date: '09-26',
-    type: RecordingType.training,
+    title: '体育概论 · 第一章串讲',
+    duration: '31:07',
+    date: '10月8日 08:15 · 转写完成',
+    type: RecordingType.classNote,
   ),
 ];
 

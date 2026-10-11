@@ -74,7 +74,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # 本 App 全部背景为程序化绘制（CustomPainter），不使用任何图片素材。
+  # v11「墨落」首页素材（生宣纸纹 / 墨迹蒙版 / 暗房颗粒）。
+  # 除首页这套水墨素材外，其余页面背景仍为程序化绘制（CustomPainter）。
+  assets:
+    - assets/ink/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
