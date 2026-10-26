@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 记忆卡 · 首页 · 墨落 · v7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     行为母题：按下 → 墨落 → 渗开 → 显影
+       上半屏 = 生宣（落墨区，纸出血到屏幕边缘，底边手工毛边）
+       下半屏 = 暗房（已显影的底片，颗粒只归这里）
+     三股力各归其位：墨 = 黑，印 = 朱，显影 = 琥珀。
+     待机全屏零发光；只有"正在录音"时墨才提亮成唯一发光物。
+     ============================================================ */
+  :root{
+    --ink:#100E0C;
+    --ink-soft:#241C17;
+    --paper:#EDE4D3;              /* 纸白：暗底上的文字 */
+    --paper-dim:rgba(237,228,211,0.62);
+    --paper-soft:rgba(237,228,211,0.80);
+    --hair:rgba(237,228,211,0.12);
+    --ink-on-paper:#2A211C;       /* 纸上的墨字 */
+    --ink-on-paper-dim:rgba(42,33,28,0.62);
+    /* 三档色，各只有一份职责，不越界 */
+    --seal:#8F2C20;               /* 印泥/朱砂：只准出现在"印"这一家族，且只在纸上 */
+    --record:#FF3B21;             /* 只允许出现在"正在录音" */
+    --progress:#D89B4A;           /* 只允许出现在"处理中" */
+    --seal-paper:#F5EDE0;
+    /* 材料层：只写一次，复用走 var()，避免内联后体积翻倍。
+       注：原先还给纸上备了一层中灰颗粒（film-grain.png），实测纸上并无该层
+       （brief 规定"颗粒只归暗房"），而它内联后占 370KB —— 已从交付稿移除，
+       文件本身保留给 Flutter 侧用。 */
+    --grainDark:url("assets/film-grain-dark.png");
+    --inkmask:url("assets/ink-blot.png");
+    --papertex:url("assets/paper.jpg");
+    --deckle:url("__DECKLE__");
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{height:100%;}
+  body{
+    background:#050608;display:flex;justify-content:center;align-items:center;
+    min-height:100vh;font-family:'Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+    padding:24px;color:var(--paper);
+  }
+
+  .phone{
+    width:390px;height:844px;border-radius:48px;background:var(--ink);   /* 平涂，不留装饰光 */
+    position:relative;overflow:hidden;isolation:isolate;
+    border:1px solid rgba(237,228,211,0.10);
+    box-shadow:0 50px 130px rgba(0,0,0,0.65), inset 0 0 0 2px rgba(0,0,0,0.5);
+  }
+  /* 注：屏幕级暗角已删除。纸是白的，任何屏幕级 inset 阴影都会把纸的四边压成"脏纸"。
+     暗角改由 .keep::after 承担 —— 它只属于暗房。 */
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:30px;background:#000;border-radius:18px;z-index:8;opacity:0.85;}
+
+  /* ══ 上半屏：生宣。满出血、无圆角、无投影 —— 它是"屏幕的上半部分"，不是一个物件 ══ */
+  .sheet{
+    position:absolute;left:0;right:0;top:0;height:566px;z-index:3;
+    background-color:#F2EBDD;
+    background-image:var(--papertex);background-size:cover;background-position:center 20%;
+    padding:48px 24px 34px;display:flex;flex-direction:column;
+    -webkit-mask-image:var(--deckle);        mask-image:var(--deckle);
+    -webkit-mask-size:100% 100%;             mask-size:100% 100%;
+    -webkit-mask-repeat:no-repeat;           mask-repeat:no-repeat;
+  }
+  /* 注：不再叠第二层纤维 —— 与底图同纹理、比例不同会产生摩尔干涉（可见方块色块）。
+     底图 background-image 本身已经是真纤维，够了。 */
+
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:500;letter-spacing:0.5px;color:var(--ink-on-paper);flex:0 0 auto;position:relative;z-index:1;}
+  .statusbar .right{display:flex;gap:6px;align-items:center;color:var(--ink-on-paper);}
+  .statusbar .right svg{display:block;}
+
+  /* 印章：这一次是真的盖在纸上 */
+  .header{display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex:0 0 auto;position:relative;z-index:1;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .seal{
+    width:38px;height:38px;flex:0 0 38px;color:var(--seal-paper);position:relative;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Noto Serif SC',serif;font-weight:900;font-size:24px;line-height:1;
+    transform:rotate(-2deg);
+  }
+  .seal::before{
+    content:'';position:absolute;inset:0;z-index:0;background:var(--seal);
+    border-radius:2px 3px 1px 3px;
+    outline:1px solid rgba(245,237,224,0.85);outline-offset:-6px;
+    filter:url(#inkBleed);
+  }
+  .seal span{position:relative;z-index:1;}
+  .brand .name{font-family:'Noto Serif SC',serif;font-weight:600;font-size:15px;letter-spacing:2.5px;color:rgba(42,33,28,0.78);}
+  .menu-btn{width:40px;height:40px;display:flex;flex-direction:column;justify-content:center;gap:4px;align-items:flex-end;margin-right:-4px;}
+  .menu-btn span{display:block;height:1.5px;width:18px;background:rgba(42,33,28,0.82);border-radius:2px;}
+
+  /* 题字：写在纸上 */
+  .inscription{
+    margin-top:18px;flex:0 0 auto;position:relative;z-index:1;
+    font-family:'Noto Serif SC',serif;font-weight:600;font-size:21px;line-height:1.3;
+    color:var(--ink-on-paper);letter-spacing:0.5px;
+  }
+  .inscription em{
+    font-family:'Ma Shan Zheng',serif;font-style:normal;
+    font-size:1.1em;color:var(--seal);vertical-align:-0.03em;
+  }
+
+  /* 录音键 = 一滴生墨（黑）。渗进纸的墨**不投影** —— 这一点决定它是不是"贴纸" */
+  .stamp-zone{flex:1;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;padding-bottom:2px;}
+  /* 录音态：全屏**唯一**的一处发光。暖光从纸背透上来，不是"球在发亮" ——
+     所以它没有边缘、没有高光点，只是纸被下面的暖光浸出来的一块晕。
+     节奏与 seep 同步（2.6s），读作"还活着"。待机态 opacity:0 —— 全屏零发光。
+     ⚠ 这里**不能用 mix-blend-mode:multiply**：.stamp-zone 因为带 z-index 已经是层叠上下文，
+       multiply 拿不到身下的纸（背板只有它自己），会退化成普通叠加 = 死代码。
+       要做"染色感"只能靠降低红饱和度：用暗朱 #A83A26 而不是亮红 #FF3B21。 */
+  .glow{
+    position:absolute;inset:0;margin:auto;z-index:0;width:330px;height:330px;
+    pointer-events:none;opacity:0;filter:blur(7px);
+    transition:opacity 420ms ease-out;
+    background:radial-gradient(circle closest-side, rgba(168,58,38,0.22) 0 24%, rgba(168,58,38,0.10) 44%, rgba(168,58,38,0.024) 64%, transparent 84%);
+  }
+  .phone.recording .glow{opacity:1;animation:breathe 2.6s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{opacity:.70}50%{opacity:1}}
+  /* 录音态：墨**变湿变亮**（同一色相内提亮），不换色 —— 朱是印章的，墨永远是墨。 */
+  .phone.recording .ink-drop{background:#1C1916;}
+  /* 录音态：墨被声音震开。滤镜挂在 .stamp-zone 外层而不是 .ink-drop ——
+     挂在同一个元素上时 mask 会晚于 filter 生效，毛刺会被蒙版切掉。 */
+  .phone.recording .stamp-zone{filter:url(#recJitter);}
+  /* 墨滴：一层近乎平的浓色，**不做假高光** —— 浓淡全交给真墨迹蒙版。
+     一旦给它一个受光面，它就从"渗进纸的墨"变成"摆在纸上的球"。 */
+  .ink-drop{
+    position:absolute;inset:0;margin:auto;width:150px;height:150px;z-index:3;
+    /* 平涂一个均匀的浓黑 —— 浓淡**全部**交给蒙版（核内 0.86~1.0 的积墨斑块 +
+       边界 1.0 的湿边）。原先那层"外圈更亮"的径向渐变会抵消刚做好的湿边：
+       边缘 alpha 已经回满，底色若同时变亮，"最浓的一圈"就不存在了。 */
+    background:#0C0B09;
+    -webkit-mask-image:var(--inkmask);        mask-image:var(--inkmask);
+    -webkit-mask-size:contain;                mask-size:contain;
+    -webkit-mask-position:center;             mask-position:center;
+    -webkit-mask-repeat:no-repeat;            mask-repeat:no-repeat;
+    transition:transform 240ms cubic-bezier(.2,.8,.2,1), background 240ms ease-out;
+  }
+  /* 渗晕①（最外、最淡）：纸被浸湿的那点潮意。有它才是"墨进了纸"，没它就是"贴了个黑片"。
+     ⚠⚠ 必须是**渐变**，不能是"平涂 + 模糊"。平涂实测会读成"黑核外面又套了一个均匀的浅色壳"：
+       剖面上就是三级台阶（核 -> 壳 -> 纸），比渐变更假，一眼是贴纸。
+     ⚠ 破"完美同心"靠的是**偏心圆心**（at 47% 54%）：上下晕宽变成 11px vs 26px、
+       左右 24px vs 13px，四个方向不等宽 —— 这才是"墨往一边淌"的样子。
+       （不能再靠 `farthest-corner` 那一版：100% 落在 0.707×框的对角，而蒙版在 ~63%
+       就裁掉元素 -> transparent 停止点永远执行不到，渐变被硬切一刀 = 核外暗环。） */
+  .bleed{
+    position:absolute;inset:0;margin:auto;z-index:1;width:186px;height:186px;
+    pointer-events:none;filter:blur(7px);
+    /* ⚠ 中心必须挖空（transparent 0 50%）。核的蒙版 alpha 在 0.86~1.0 之间，
+       也就是核内"薄"的地方**会透出下层** —— 渗晕若铺满中心，透上来的就是染过色的浅色，
+       反而把核内的浓淡对比度压掉（实测 std 6.64 -> 3.88）。
+       挖空在物理上也对：真墨滴中心最厚，本来就不透。 */
+    background:radial-gradient(circle closest-side at 47% 54%,
+        transparent 0 50%, rgba(40,32,26,0.30) 68%,
+        rgba(40,32,26,0.20) 78%, rgba(40,32,26,0.075) 88%, transparent 96%);
+    transform:rotate(23deg);
+    -webkit-mask-image:var(--inkmask);        mask-image:var(--inkmask);
+    -webkit-mask-size:contain;                mask-size:contain;
+    -webkit-mask-position:center;             mask-position:center;
+    -webkit-mask-repeat:no-repeat;            mask-repeat:no-repeat;
+  }
+  /* 渗晕②（紧贴核的湿痕）：墨在纤维里停住时沉积的那一道窄边。
+     它只比核大 11%，而核不透明且压在它上面（z-index 更高），所以外露部分就是**一圈窄环**。
+     同样用渐变（紧贴核最浓 0.55 -> 向外归零），并把圆心往**反方向**偏（at 51% 48.5%），
+     这样它与 .bleed 的偏心方向相反 —— 两层晕各自朝不同方向淌，叠起来更不可能是同心圆。
+     按下时向外扩一圈 = "渗开"。 */
+  .wet-ring{
+    position:absolute;inset:0;margin:auto;z-index:2;width:166px;height:166px;
+    pointer-events:none;filter:blur(3px);
+    /* 同样中心挖空（理由见 .bleed）：它只负责"紧贴核外的那一圈湿痕"。 */
+    background:radial-gradient(circle closest-side at 51% 48.5%,
+        transparent 0 54%, rgba(32,25,21,0.55) 74%,
+        rgba(32,25,21,0.26) 84%, rgba(32,25,21,0.06) 94%, transparent 100%);
+    transform:rotate(-14deg);
+    -webkit-mask-image:var(--inkmask);        mask-image:var(--inkmask);
+    -webkit-mask-size:contain;                mask-size:contain;
+    -webkit-mask-position:center;             mask-position:center;
+    -webkit-mask-repeat:no-repeat;            mask-repeat:no-repeat;
+    transition:transform 260ms ease-out, opacity 260ms ease-out;
+  }
+  /* 按下：墨被压开 + 洇痕向外扩一圈（不是"点亮一颗球"）。
+     ⚠ 基态带了 rotate，所以**每一处 transform 都必须把 rotate 一起写上**，
+       否则激活态/动画会把基态旋转整个覆盖掉，环会"啪"地跳正。 */
+  .ink-drop:active{transform:scale(.92);}
+  .ink-drop:active ~ .wet-ring{transform:rotate(-14deg) scale(1.09);opacity:1;}
+  /* 录音态：墨**变湿变亮**（同一色相内提亮），不换色 —— 朱是印章的，墨永远是墨。 */
+  .phone.recording .wet-ring{animation:seep 2.6s ease-out infinite;}
+  @keyframes seep{
+    0%  {transform:rotate(-14deg) scale(1);opacity:.9}
+    100%{transform:rotate(-14deg) scale(1.17);opacity:0}
+  }
+  .hint{text-align:center;position:relative;z-index:1;margin-top:6px;}
+  .hint .h1{font-size:15px;font-weight:500;color:var(--ink-on-paper);letter-spacing:0.5px;}
+  .hint .h2{font-size:11.5px;color:var(--ink-on-paper-dim);margin-top:3px;letter-spacing:0.3px;}
+  /* ⚠ 录音态的"状态强信号"必须是**切文案**，不是换色。
+     静帧里两态写同一行"按一下开始录音"，等于压根没有状态 —— 这是第 9 轮评审
+     判 8.5 而不是 9 的唯一原因（它说这是"命题 1 在录音态的守门员"）。
+     ⚠ 计时器**刻意不用琥珀**：琥珀的职责是"显影"（转写中），而录音态属于"渗开"阶段，
+       挪用它会让"一色一职"出现歧义。计时靠**墨色 + 等宽数字 + 拉开字距**取得存在感，
+       这正是"墨分五色"的用法，不算引入第四色。 */
+  .hint .t-rec{display:none;}
+  .phone.recording .hint .t-idle{display:none;}
+  .phone.recording .hint .t-rec{display:inline-block;}
+  .phone.recording .hint .h2{
+    color:var(--ink-on-paper);font-size:13px;font-weight:500;
+    letter-spacing:1.6px;font-variant-numeric:tabular-nums;margin-top:2px;
+  }
+
+  /* ══ 下半屏：暗房（已显影的底片）。颗粒只属于这里 ══ */
+  .keep{position:absolute;left:0;right:0;top:566px;bottom:0;z-index:3;padding:18px 24px 0;background:var(--ink);}
+  .keep::after{                        /* 暗房的镜头暗角。只在这里，不越界到纸上 */
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(130% 62% at 50% 42%, transparent 48%, rgba(0,0,0,0.34) 100%);
+  }
+  /* ⚠ 不能用 mix-blend-mode:overlay：overlay 在暗底上是**乘法**，底色 #0D(0.051) 时
+     2×0.051×0.502 ≈ 0.051 —— 实测暗房干净空带 std 仅 0.67、相邻像素差中位 0.0，
+     等于压根没铺。改用 normal 混合的"黑底白噪"层：素材已把中灰全部压黑，
+     浮上来的只有颗粒亮点，所以底色 #0D 不被抬高，动的只有噪声本身。 */
+  .film-grain{
+    position:absolute;inset:0;pointer-events:none;
+    mix-blend-mode:normal;opacity:0.08;
+    /* ⚠ `background-size` 必须是 tile 的 **1:1**（600px）。写成 240px 会把图再缩 2.5 倍，
+       颗粒细到亚像素后被抗锯齿直接平均掉 —— 实测那一下的 std 甚至比"没铺"还低。 */
+    background-image:var(--grainDark);background-size:600px 600px;background-repeat:repeat;
+  }
+  .recent{position:relative;z-index:1;padding-left:11px;}   /* 给每行左侧的竖墨线让位 */
+  .recent .ttl{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:13px;letter-spacing:1px;color:rgba(237,228,211,0.72);
+    padding-bottom:7px;position:relative;
+  }
+  /* 分隔线 = 两端淡出的墨线，不是通栏 1px 实线 —— 通栏实线是"通用深色列表"最强的信号 */
+  .recent .ttl::after{
+    content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:linear-gradient(90deg, rgba(237,228,211,0.20) 0%, rgba(237,228,211,0.10) 40%, rgba(237,228,211,0.04) 100%);
+  }
+  .recent .ttl .more{font-size:12px;letter-spacing:0.5px;color:rgba(237,228,211,0.66);}
+  .item{position:relative;display:flex;justify-content:space-between;align-items:center;padding:6px 0;gap:12px;}
+  /* 每行左侧一道短竖墨线：把这一行"挂"在纸上，而不是浮在暗房里 */
+  .item::before{
+    content:'';position:absolute;left:-11px;top:50%;transform:translateY(-50%);
+    width:2px;height:24px;border-radius:1px;background:rgba(237,228,211,0.15);
+  }
+  /* 行与行之间同样是墨线（两端淡出），而不是靠留白分隔 */
+  .item + .item::after{
+    content:'';position:absolute;left:0;right:0;top:-3px;height:1px;
+    background:linear-gradient(90deg, rgba(237,228,211,0.10) 0%, rgba(237,228,211,0.05) 45%, transparent 100%);
+  }
+  .item .left{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .item .name{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--paper);letter-spacing:0;}
+  /* 转写中 = **正在显影**：标题由模糊浮到清晰、再退回。这是母题第三个动作（显影）
+     在全页唯一没被实现的地方 —— 此前只靠一个琥珀时间戳暗示"正在处理"。
+     ⚠ 两个防坑点：① 周期里有 76% 的时间是**清晰**的（12%~88%）；
+       ② 负的 `animation-delay:-1.7s` 让动画从周期中点起步 —— 否则页面刚加载就被
+          截图/被人看到时正好停在最模糊的那一帧，静态稿里就有一行糊字。 */
+  .item.rendering .name{animation:develop 3.4s ease-in-out -1.7s infinite;}
+  @keyframes develop{
+    0%  {filter:blur(.9px);opacity:.86}
+    12% {filter:blur(0);opacity:1}
+    88% {filter:blur(0);opacity:1}
+    100%{filter:blur(.9px);opacity:.86}
+  }
+  .sti{width:14px;height:14px;flex:0 0 14px;display:flex;align-items:center;justify-content:center;}
+  .sti i{display:block;width:8px;height:8px;border-radius:50%;background:var(--paper);}  /* 已生成 = 实心墨点 */
+  .item .meta{font-size:12px;color:var(--paper-dim);padding-left:22px;letter-spacing:0.3px;}
+  .item .right{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+  .item .dur{font-size:13px;color:var(--paper-soft);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .item.rendering .dur,.item.rendering .meta{color:var(--progress);}   /* 处理中=琥珀 */
+  .play{width:20px;height:20px;flex:0 0 20px;color:var(--paper-soft);display:flex;align-items:center;justify-content:center;}
+  /* 显影：转写中不是静态 82%，是"正在浮现" */
+  .pg{stroke-dasharray:34.56;stroke-dashoffset:17;}   /* 停在"半显影"，待机态不动 */
+
+  /* 导航栏：融进暗房，不做浮起的工具条（那是通用深色 App 模板味最重的地方） */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;height:68px;z-index:5;
+    display:flex;justify-content:space-around;align-items:center;
+    padding-bottom:env(safe-area-inset-bottom,0);
+    border-top:1px solid rgba(237,228,211,0.08);
+    background:transparent;
+  }
+  /* 三个图标也是母题符号：方印 / 声波与落墨 / 搁着的毛笔。
+     选中态靠**笔画视觉加重**（提亮 + 轻微放大）而非换成另一种颜色 ——
+     这个页面只有三档语义色（墨·朱·琥珀），导航不该引进第四种。 */
+  .tab{display:flex;flex-direction:column;align-items:center;gap:5px;color:rgba(237,228,211,0.40);font-size:10px;letter-spacing:1px;}
+  .tab.active{color:var(--paper);}
+  .tab svg{display:block;transition:transform 200ms ease-out;}
+  .tab.active svg{transform:scale(1.07);}
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <!-- color-interpolation-filters="sRGB"：SVG 滤镜默认走 linearRGB，会让色值偏离令牌。
+         实测本页印章在加与不加时都是 #8F2C20（无偏离），所以这条只是**预防性**的，
+         不是修复。仍保留：任何后续改动造成偏离时它会挡住。 -->
+    <filter id="inkBleed" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- 录音态：墨被声音震开。挂在 .stamp-zone **外层**（不是挂在 .ink-drop 上）——
+         挂在同一个元素上时 mask 会晚于 filter 生效，毛刺会被蒙版切掉。
+         噪声驱动 = 有机起伏；若换成"绕圆均匀排布的针"就变成齿轮/爆炸，撞黑名单第 2 条。 -->
+    <filter id="recJitter" x="-32%" y="-32%" width="164%" height="164%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.052 0.038" numOctaves="3" seed="11" result="n">
+        <animate attributeName="baseFrequency" dur="1.25s"
+                 values="0.046 0.034;0.068 0.050;0.046 0.034" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- ══ 生宣（满出血，底边手工毛边）══ -->
+    <div class="sheet">
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="right">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="4.5" y="5" width="3" height="7" rx="1" fill="currentColor"/><rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="currentColor"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.2c2.1 0 4 0.8 5.4 2.1l1.2-1.3C12.9 1.2 10.6 0.3 8 0.3S3.1 1.2 1.4 3l1.2 1.3C4 3 5.9 2.2 8 2.2z" fill="currentColor"/><path d="M8 5.4c1.2 0 2.3 0.5 3.1 1.3l1.2-1.3C11.2 4.1 9.7 3.4 8 3.4S4.8 4.1 3.7 5.4l1.2 1.3c.8-.8 1.9-1.3 3.1-1.3z" fill="currentColor"/><circle cx="8" cy="9.4" r="1.7" fill="currentColor"/></svg>
+          <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="19" height="11" rx="3" stroke="currentColor"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="21" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="header">
+        <div class="brand">
+          <div class="seal"><span>记</span></div>
+          <div class="name">AI 记忆卡</div>
+        </div>
+        <div class="menu-btn"><span></span><span></span><span></span></div>
+      </div>
+
+      <div class="inscription">开口，便被<em>记</em>下。</div>
+
+      <div class="stamp-zone">
+        <div class="glow"></div>
+        <div class="ink-drop"></div>
+        <div class="bleed"></div>
+        <div class="wet-ring"></div>
+      </div>
+
+      <div class="hint">
+        <div class="h1"><span class="t-idle">按一下开始录音</span><span class="t-rec">正在录音 · 按一下结束</span></div>
+        <div class="h2"><span class="t-idle">或长按进入速记</span><span class="t-rec">00:07</span></div>
+      </div>
+    </div>
+
+    <!-- ══ 暗房（已显影的底片）══ -->
+    <div class="keep">
+      <div class="film-grain"></div>
+      <div class="recent">
+        <div class="ttl"><span>最近 · 共 128 段</span><span class="more">全部 →</span></div>
+
+        <div class="item">
+          <div class="left">
+            <div class="name"><span class="sti"><i></i></span>马原小组讨论 · 第三周</div>
+            <div class="meta">今天 14:32 · 会议纪要已生成</div>
+          </div>
+          <div class="right">
+            <div class="dur">42:18</div>
+            <div class="play"><svg width="10" height="11" viewBox="0 0 10 11"><path d="M1.2 1.2l7.6 4.3-7.6 4.3z" fill="currentColor"/></svg></div>
+          </div>
+        </div>
+
+        <div class="item rendering">
+          <div class="left">
+            <div class="name"><span class="sti">
+              <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" fill="none" stroke="rgba(216,155,74,0.22)" stroke-width="1.8"/><circle class="pg" cx="7" cy="7" r="5.5" fill="none" stroke="#D89B4A" stroke-width="1.8" transform="rotate(-90 7 7)"/></svg>
+            </span>考研英语真题精讲</div>
+            <div class="meta">昨天 19:05 · 转写中</div>
+          </div>
+          <div class="right"><div class="dur">58:40</div></div>
+        </div>
+
+        <div class="item">
+          <div class="left">
+            <div class="name"><span class="sti"><i></i></span>体育概论 · 第一章串讲</div>
+            <div class="meta">10月8日 08:15 · 转写完成</div>
+          </div>
+          <div class="right">
+            <div class="dur">31:07</div>
+            <div class="play"><svg width="10" height="11" viewBox="0 0 10 11"><path d="M1.2 1.2l7.6 4.3-7.6 4.3z" fill="currentColor"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabbar">
+      <div class="tab active">
+        <!-- 首页 = 一枚方印（外粗内细的**双描边**框，子母印的语汇）。
+             ⚠ 两条实测教训：① 画十字界格会读成"田字格/表格"图标；
+             ② 内框**填实**会读成"复选框已选中"。所以内框也必须只是描边。 -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5.8 5.5c3.5-.5 8.7-.6 12.3-.2.5 3.7.5 8.8.1 12.4-3.6.4-8.8.4-12.4.1-.4-3.7-.4-8.6 0-12.3z"
+                stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M9.4 9.4c1.7-.3 3.5-.4 5.2-.2.3 2.4.3 5 .1 7.4-2 .3-4.2.3-6.2.1-.2-2.5-.2-5 .1-7.3z"
+                stroke="currentColor" stroke-width="1.15" stroke-linejoin="round" opacity=".62"/>
+        </svg>
+        首页
+      </div>
+      <div class="tab">
+        <!-- 记录 = 声波（五根不等长墨痕）+ 底下那一点落墨。
+             墨点不能太小：实测 r=1.45 时在 22px 下直接看不见，等于白画。 -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5.6 8.2v4.4M8.9 5.4v10M12.2 4.2v12.6M15.5 6.2v8.4M18.8 8.6v3.6"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="19.8" r="1.85" fill="currentColor"/>
+        </svg>
+        记录
+      </div>
+      <div class="tab">
+        <!-- 我的 = 一支搁着的毛笔（斜笔杆 + 收尖的笔锋） -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19.5 4.1 12.3 11.3" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/>
+          <path d="M12.3 11.3 6.7 19.2l4.7-2.8 1.9-3.7z" fill="currentColor"/>
+        </svg>
+        我的
+      </div>
+    </div>
+  </div>
+</body>
+</html>

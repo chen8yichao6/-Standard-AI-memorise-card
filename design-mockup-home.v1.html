@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 记忆卡 · 首页 · 赛博水墨</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0d0f13;
+    --paper:#EDE4D3;
+    --paper-dim:rgba(237,228,211,0.56);
+    --paper-faint:rgba(237,228,211,0.24);
+    --hair:rgba(237,228,211,0.13);
+    --cinnabar:#DE2910;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html,body{height:100%;}
+  body{
+    background:#050608;
+    display:flex;justify-content:center;align-items:center;
+    min-height:100vh;font-family:'Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+    padding:24px;color:var(--paper);
+  }
+  /* ===== 手机外框 ===== */
+  .phone{
+    width:390px;height:844px;border-radius:48px;
+    background:
+      radial-gradient(130% 80% at 82% -8%, rgba(255,146,54,0.12), transparent 58%),
+      radial-gradient(150% 110% at 50% 122%, rgba(222,41,16,0.07), transparent 55%),
+      var(--ink);
+    position:relative;overflow:hidden;
+    border:1px solid rgba(237,228,211,0.10);
+    box-shadow:0 50px 130px rgba(0,0,0,0.65), inset 0 0 0 2px rgba(0,0,0,0.5);
+  }
+  /* 胶片颗粒噪点 */
+  .grain{
+    position:absolute;inset:0;pointer-events:none;opacity:0.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* 听筒 */
+  .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:30px;background:#000;border-radius:18px;z-index:5;opacity:0.85;}
+
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:54px 26px 0;}
+
+  /* 状态栏 */
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:500;color:var(--paper);letter-spacing:0.5px;}
+  .statusbar .right{display:flex;gap:6px;align-items:center;}
+  .statusbar .right svg{display:block;}
+
+  /* 顶部 header */
+  .header{display:flex;align-items:center;justify-content:space-between;margin-top:14px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .seal{
+    width:40px;height:40px;background:var(--cinnabar);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Noto Serif SC',serif;font-weight:900;font-size:23px;
+    border-radius:7px;transform:rotate(-4deg);
+    box-shadow:0 3px 12px rgba(222,41,16,0.45);
+  }
+  .brand .name{font-family:'Noto Serif SC',serif;font-weight:600;font-size:17px;letter-spacing:2px;}
+  .brand .name small{display:block;font-family:'Noto Sans SC',sans-serif;font-weight:300;font-size:9px;letter-spacing:3px;color:var(--paper-dim);margin-top:2px;}
+  .menu-btn{width:34px;height:34px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:flex-end;}
+  .menu-btn span{display:block;height:1.5px;background:var(--paper-dim);border-radius:2px;}
+  .menu-btn span:nth-child(1){width:20px;}
+  .menu-btn span:nth-child(2){width:14px;}
+
+  /* 欢迎区 */
+  .hero{margin-top:46px;}
+  .hero .kicker{font-size:11px;letter-spacing:6px;color:var(--paper-dim);font-weight:300;}
+  .hero .big{
+    font-family:'Noto Serif SC',serif;font-weight:900;font-size:40px;line-height:1.32;
+    letter-spacing:3px;margin-top:18px;color:var(--paper);
+  }
+  .hero .big em{color:var(--cinnabar);font-style:normal;}
+  .hero .sub{margin-top:16px;font-size:13px;line-height:1.9;color:var(--paper-dim);font-weight:300;max-width:270px;}
+
+  /* 主 CTA · 印章录音键 */
+  .cta{margin-top:auto;margin-bottom:30px;display:flex;flex-direction:column;align-items:center;}
+  .rec{
+    width:132px;height:132px;border-radius:50%;position:relative;
+    background:radial-gradient(circle at 50% 42%, rgba(222,41,16,0.20), rgba(13,15,19,0.92) 72%);
+    border:1.5px solid var(--cinnabar);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 7px rgba(222,41,16,0.05), 0 0 46px rgba(222,41,16,0.20);
+  }
+  .rec::after{
+    content:'';position:absolute;inset:-15px;border-radius:50%;
+    border:1px solid var(--hair);
+    animation:breathe 3.8s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.09);opacity:.12}}
+  .rec .dot{width:32px;height:32px;border-radius:50%;background:var(--cinnabar);box-shadow:0 0 20px rgba(222,41,16,0.7);}
+  .cta .hint{margin-top:20px;font-size:12px;letter-spacing:4px;color:var(--paper-dim);font-weight:300;}
+  .cta .hint b{color:var(--paper);font-weight:500;}
+
+  /* 最近录音 */
+  .recent{margin-top:30px;}
+  .recent .ttl{font-size:11px;letter-spacing:5px;color:var(--paper-dim);display:flex;align-items:center;gap:10px;}
+  .recent .ttl::after{content:'';flex:1;height:1px;background:var(--hair);}
+  .item{display:flex;justify-content:space-between;align-items:baseline;padding:15px 2px;border-bottom:1px solid var(--hair);}
+  .item .left{display:flex;flex-direction:column;gap:5px;}
+  .item .name{font-size:15px;font-weight:400;color:var(--paper);letter-spacing:0.5px;}
+  .item .meta{font-size:11px;color:var(--paper-dim);font-weight:300;letter-spacing:1px;}
+  .item .dur{font-size:12px;color:var(--paper-faint);font-variant-numeric:tabular-nums;}
+
+  /* 底部 tab */
+  .tabbar{
+    margin-top:auto;height:66px;display:flex;justify-content:space-around;align-items:center;
+    border-top:1px solid var(--hair);background:rgba(13,15,19,0.82);backdrop-filter:blur(10px);
+    position:absolute;left:0;right:0;bottom:0;
+  }
+  .tab{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--paper-dim);font-size:10px;letter-spacing:1px;}
+  .tab.active{color:var(--cinnabar);}
+  .tab svg{display:block;}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="grain"></div>
+    <div class="notch"></div>
+    <div class="screen">
+      <!-- 状态栏 -->
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="right">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#EDE4D3"/><rect x="4.5" y="5" width="3" height="7" rx="1" fill="#EDE4D3"/><rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="#EDE4D3"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="#EDE4D3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.2c2.1 0 4 0.8 5.4 2.1l1.2-1.3C12.9 1.2 10.6 0.3 8 0.3S3.1 1.2 1.4 3l1.2 1.3C4 3 5.9 2.2 8 2.2z" fill="#EDE4D3"/><path d="M8 5.4c1.2 0 2.3 0.5 3.1 1.3l1.2-1.3C11.2 4.1 9.7 3.4 8 3.4S4.8 4.1 3.7 5.4l1.2 1.3c.8-.8 1.9-1.3 3.1-1.3z" fill="#EDE4D3"/><circle cx="8" cy="9.4" r="1.7" fill="#EDE4D3"/></svg>
+          <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="19" height="11" rx="3" stroke="#EDE4D3"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#EDE4D3"/><rect x="21" y="3.5" width="2" height="5" rx="1" fill="#EDE4D3"/></svg>
+        </div>
+      </div>
+
+      <!-- header -->
+      <div class="header">
+        <div class="brand">
+          <div class="seal">记</div>
+          <div class="name">AI 记忆卡<small>SOUND · REMEMBERED</small></div>
+        </div>
+        <div class="menu-btn"><span></span><span></span></div>
+      </div>
+
+      <!-- 欢迎区 -->
+      <div class="hero">
+        <div class="kicker">记忆 · 始于声音</div>
+        <div class="big">开口，<br>便被<em>记</em>下。</div>
+        <div class="sub">会议、课堂、灵感闪现——一键收录，AI 替你整理成可读的文稿与纪要。</div>
+      </div>
+
+      <!-- 主 CTA -->
+      <div class="cta">
+        <div class="rec"><div class="dot"></div></div>
+        <div class="hint">点按 · <b>开始记录</b></div>
+      </div>
+
+      <!-- 最近录音 -->
+      <div class="recent">
+        <div class="ttl">最近</div>
+        <div class="item">
+          <div class="left">
+            <div class="name">马原小组讨论 · 第三周</div>
+            <div class="meta">今天 14:32 · 会议纪要已生成</div>
+          </div>
+          <div class="dur">42:18</div>
+        </div>
+        <div class="item">
+          <div class="left">
+            <div class="name">考研英语真题精讲</div>
+            <div class="meta">昨天 19:05 · 转写完成</div>
+          </div>
+          <div class="dur">58:40</div>
+        </div>
+        <div class="item">
+          <div class="left">
+            <div class="name">太极拳训练笔记</div>
+            <div class="meta">10月8日 · 待整理</div>
+          </div>
+          <div class="dur">12:07</div>
+        </div>
+      </div>
+
+      <!-- 底部 tab -->
+      <div class="tabbar">
+        <div class="tab active">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="3" fill="currentColor"/><path d="M3 11a8 8 0 0 1 8-8M19 11a8 8 0 0 1-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          首页
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="9" width="2.4" height="4" rx="1" fill="currentColor"/><rect x="8" y="5" width="2.4" height="12" rx="1" fill="currentColor"/><rect x="13" y="7.5" width="2.4" height="7" rx="1" fill="currentColor"/><rect x="18" y="3" width="2.4" height="16" rx="1" fill="currentColor"/></svg>
+          记录
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.5" r="3.2" fill="currentColor"/><path d="M4.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          我的
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

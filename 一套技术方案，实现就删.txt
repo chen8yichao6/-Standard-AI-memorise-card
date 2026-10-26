@@ -1,0 +1,40 @@
+..请严格按照下面整套流程，帮我搭建完整开发链路，一步步执行，输出每一步命令与检查要点。
+整套技术栈：Flutter + scrcpy + Cloudflare Tunnel + CC-Connect
+需求：电脑和手机不在同一个WiFi，手机外网（4G/其他WiFi）可以远程预览Flutter APP界面。
+
+【前置环境确认】
+1. 确认本机已安装 Flutter SDK，能正常 flutter doctor，安卓真机开启USB调试，电脑USB连接安卓手机。
+2. 确认已安装 scrcpy。
+3. 确认已安装 cloudflared（Cloudflare Tunnel）。
+4. CC-Connect 已配置完成，可以接收微信消息调用你（Claude Code）。
+
+【完整分步流程，按顺序执行】
+步骤1：启动Flutter项目调试
+进入Flutter工程目录，执行 flutter run 连接USB安卓真机，开启调试模式，确认hot reload可用。
+记录Flutter调试端口，保持flutter run进程持续运行，不要关闭。
+
+步骤2：启动scrcpy网页投屏
+启动 scrcpy 的web服务，把安卓真机画面映射到本地端口 8080。
+确认本地浏览器访问 http://127.0.0.1:8080 可以看到手机APP实时画面。
+
+步骤3：Cloudflare Tunnel 外网穿透8080端口
+新开PowerShell，运行 cloudflared tunnel --url localhost:8080
+拿到公网HTTPS访问链接。手机任意网络打开这个链接，就能远程查看APP实时投屏画面。
+> 注意：这个进程需要保持后台运行，关闭就断外网访问。
+
+步骤4：CC-Connect联动规则
+CC-Connect收到微信消息指令后，调用Claude Code完成下面动作：
+① 修改Flutter项目Dart源码
+② 触发Flutter hot reload（按r键），手机真机APP界面更新
+③ scrcpy投屏画面自动同步更新，外网网页上能直接看到新界面
+
+【规则与约束，必须遵守】
+1. 区分：Flutter hot reload 只在本地USB连接的真机生效；外网不是直接连接Flutter调试端口，是通过scrcpy投屏画面转发，规避外网热重载不稳定问题。
+2. 所有命令用Windows PowerShell语法。
+3. 每一步执行后，输出校验方法，告诉我怎么判断这一步成功。
+4. 出现报错，优先给出排查方案，不要直接跳过。
+5. 不要使用localtunnel，只用Cloudflare Tunnel。
+6. 不要混淆网页Live Server，本项目是Flutter移动端APP，不是HTML网页。
+
+【测试指令】
+全部部署完成后，执行一次测试：修改Flutter首页文字，触发hot reload，确认外网投屏网页自动显示更新后的APP界面。输出完整测试报告。
